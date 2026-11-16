@@ -21,6 +21,7 @@ Try it with fake data first: open `index.html` and add `?demo` to the end of the
 | File | What it is |
 |---|---|
 | `index.html` | The whole app in one file: staff side, public form, and demo mode. It runs on GitHub as-is. Paste the same file into Apps Script as `Index`. |
+| `config.js` | Your two Apps Script links (GitHub copy only). Fill it in once; updating `index.html` never touches it. |
 | `apps-script/Code.gs` | The bridge between the app and the sheet. Paste it into the sheet's Apps Script. |
 | `apps-script/appsscript.json` | Apps Script settings (time zone and runtime). |
 | `tools/migrate.py` | The one-time script that cleaned the old "Master List" into the new format. You don't need to run it again. |
@@ -62,15 +63,13 @@ Copy both `/exec` links somewhere safe.
 
 ### Part 4: Put the main copy on GitHub Pages
 1. Create a new **public** GitHub repository, for example `piper-industry-partners`.
-2. Open `index.html` and fill in the settings block near the top:
+2. Upload `index.html`, `config.js`, and the other files to the repo (plus `logo.png` if you have one).
+3. In the repo, open `config.js`, click ✏️ to edit it, and paste in your two links:
    ```js
-   window.PIPER_CONFIG = {
-     API_URL:   'https://script.google.com/macros/s/…PUBLIC…/exec',
-     STAFF_URL: 'https://script.google.com/macros/s/…STAFF…/exec',
-     LOGO_URL:  ''          // optional: e.g. 'logo.png' after you upload one
-   };
+   API_URL:   'https://script.google.com/macros/s/…PUBLIC…/exec',
+   STAFF_URL: 'https://script.google.com/macros/s/…STAFF…/exec',
    ```
-3. Upload `index.html` (and `logo.png` if you have one) to the repo.
+   Then click **Commit changes**.
 4. In the repo, go to **Settings → Pages**. Set it to deploy from the `main` branch, `/ (root)`. After a minute, your app is live at `https://YOUR-NAME.github.io/piper-industry-partners/`.
 5. Open the **Staff** link, go to **Settings**, and fill in these three fields. (You can also type them on the sheet's Settings tab.) Then click **Save**.
    - **Allowed GitHub app addresses:** `https://YOUR-NAME.github.io/piper-industry-partners/`
@@ -91,8 +90,8 @@ You do **not** need to share the spreadsheet with staff. The app works through y
 
 Apps Script deployments are frozen at the version you deployed. After any change:
 
-1. **Changed `index.html`?** Upload it to GitHub **and** paste it into Apps Script's `Index` file.
-2. **Changed `Code.gs`?** Paste it into Apps Script.
+1. **Changed `index.html`?** Upload it to GitHub (replace the old one; `config.js` keeps your links). Also paste it into Apps Script's `Index` file.
+2. **Changed `Code.gs`?** Paste it into Apps Script, choose **setup**, and click **Run**. Setup is safe to re-run. It repairs formatting and the automatic sheet features.
 3. In Apps Script, go to **Deploy → Manage deployments**. Click ✏️ on **Staff**, set Version to **New version**, and click **Deploy**. Then do the same for **Public**. The links don't change.
 
 Forgetting step 3 is the most common reason a change "doesn't show up."
@@ -109,6 +108,31 @@ Nothing is lost, because the Google copy is the same app.
 - **The app:** every request goes through one function, `Backend.call(action, payload)`. A replacement bridge (Microsoft 365, a hosted database, and so on) only needs to answer the same ~15 actions that `Code.gs` handles. The screens don't change.
 
 ---
+
+## Working directly in the spreadsheet
+
+People who prefer the sheet can use it like any spreadsheet. The app keeps up on its own, and nobody has to do any extra steps.
+
+- **Add a person:** type them into the next empty row on **Contacts**. Their ID, Status, and who added them fill in automatically within a second or two.
+- **Edit anything:** just type. "Updated" and "Updated By" stamp themselves.
+- **Roles, academies, and staff:** separate several with `;` or a comma. Capitalization doesn't matter. The choices are on the Settings tab.
+- **Log participation in the sheet:** on **Engagements**, type the person's name (as it appears on Contacts) or their email under *Contact Name*, plus the date and activity. The Contact ID fills in, and their "Last Positive Contact" updates.
+- **Sort, filter, move columns, add your own columns or formulas, and copy/paste rows:** all safe. The app finds columns by their names and people by their IDs.
+  - Tip: use **Data → Create filter view** instead of a regular filter, so your filter doesn't change what everyone else sees.
+- **Add a new role:** type it on the **Settings** tab. Its role tab and its spot on the partner form appear automatically.
+
+**How fast is it?**
+- **App → sheet:** about 1 second.
+- **Sheet → app:** about 2–6 seconds. Open copies of the app check for changes every 5 seconds while someone is using them (every 30 seconds after 10 idle minutes), and update in place without losing their search or open panel. The green **Live** dot in the top bar shows it's connected.
+
+**Two people editing the same person at once:** if one person edits in the sheet while another edits in the app, both changes are kept as long as they touched different fields. If they changed the *same* field, the app saves nothing, says who changed it, and offers to load their version.
+
+**The only things to avoid:**
+- **Renaming a column header.** You'll get a warning first, and admins see a red banner in the app until it's renamed back.
+- **Typing on the role tabs.** They're live views; make edits on Contacts instead.
+- **Changing or deleting someone's ID.**
+
+> Anyone with **Editor** access to the sheet can change any record, just like an admin in the app. Give spreadsheet people Editor access only if they should be able to edit. Everyone else can use the app.
 
 ## The spreadsheet tabs
 
@@ -132,6 +156,8 @@ You can sort the sheet or add your own columns. The app finds columns by their h
 ## Troubleshooting
 | Symptom | Fix |
 |---|---|
+| Rows typed in the sheet don't get an ID | Re-run **setup** once from Apps Script. It installs the automatic sheet features. The app also fills in missing IDs the next time anyone opens it. |
+| The Live dot is yellow ("Reconnecting") | The app can't reach Google right now. It keeps retrying, and your data is safe. |
 | "This app address is not approved yet" | Add the exact GitHub address to **Allowed GitHub app addresses** in Settings. |
 | "Could not reach the server" | The Public deployment must be set to **Anyone**. Also deploy a **New version**. |
 | A change doesn't appear | Use **Manage deployments → New version** on both deployments. |

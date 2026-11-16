@@ -8,16 +8,18 @@
 <!--
   Piper Industry Partners
   This ONE file runs in two places:
-    1. GitHub Pages (main)   -> fill in PIPER_CONFIG below
+    1. GitHub Pages (main)   -> your two links go in config.js (next to this file), not here
     2. Google Apps Script    -> paste this whole file into the script's "Index.html" (no edits needed)
+  Updating? Just replace this file. config.js keeps your links.
   Open with ?demo at the end of the address to try it with sample data.
 -->
 <script>
+// Fallback only. Prefer config.js; anything filled in there wins.
 window.PIPER_CONFIG = {
   // "Public" Apps Script deployment URL (Who has access: Anyone). Ends in /exec
-  API_URL: 'https://script.google.com/macros/s/AKfycbzLcVPe39nnGusHeCWcU0p3HZvAgrtCCC5qakNiT-o88ykDYVSitUJvgMAr7IZ98C0siQ/exec',
+  API_URL: '',
   // "Staff" Apps Script deployment URL (Who has access: Anyone within piperschools.us). Ends in /exec
-  STAFF_URL: 'https://script.google.com/a/macros/piperschools.us/s/AKfycbxRXbtlCKQivRHIlQlnLavtMGymLl1YZPrY_Gh1aMvYacp8czaIz3PWk-ntwUHZvFeNfw/exec',
+  STAFF_URL: '',
   // Optional: link to a logo image (PNG/SVG). Leave blank to use the built-in Piper "P" mark.
   LOGO_URL: ''
 };
@@ -45,7 +47,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .hide{display:none!important}
 
 /* ---------- top bar */
-.topbar{background:var(--piper);color:#fff;position:sticky;top:0;z-index:30;box-shadow:0 2px 10px rgba(38,22,63,.25)}
+.topbar{background:var(--piper);color:#fff;position:sticky;top:env(safe-area-inset-top,0px);z-index:30;box-shadow:0 2px 10px rgba(38,22,63,.25)}
 .topbar-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 20px}
 .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;min-width:0}
 .mark{width:36px;height:36px;border-radius:9px;background:#fff;color:var(--piper);display:grid;place-items:center;font-weight:800;font-size:21px;flex:none;letter-spacing:-1px}
@@ -59,6 +61,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .nav a[aria-current="page"]{background:rgba(255,255,255,.18);opacity:1;font-weight:600}
 .badge-n{background:#fff;color:var(--piper);border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center}
 .me{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#fff;opacity:.9;white-space:nowrap}
+.live i{width:8px;height:8px;border-radius:50%;background:#5ee39a;box-shadow:0 0 0 3px rgba(94,227,154,.25)}
+.live.off i{background:#ffc857;box-shadow:0 0 0 3px rgba(255,200,87,.25)}
+.live.flash i{animation:pulse .8s ease 2}
+@keyframes pulse{50%{transform:scale(1.7)}}
+@media (prefers-reduced-motion:reduce){.live.flash i{animation:none}}
+.banner.warn{background:#fdeceb;color:#7a1d14;border-bottom-color:#f3c3bf}
 .me-btn{background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:999px;padding:4px 6px 4px 4px;display:flex;align-items:center;gap:8px;cursor:pointer}
 .me-btn:hover{background:rgba(255,255,255,.2)}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--piper-100);color:var(--piper-700);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
@@ -266,6 +275,7 @@ label.chip:has(input:focus-visible){outline:3px solid var(--focus);outline-offse
   .nav{order:3;flex-basis:100%;margin:0 -6px}
   .nav a{padding:7px 10px;font-size:13.5px}
   .role-tag{display:none}
+  .live span{display:none}
   main{padding:14px 16px}
   .page-head h1{font-size:21px}
   .bulkbar{top:104px}
@@ -310,7 +320,21 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 var CFG = Object.assign({ API_URL: '', STAFF_URL: '', LOGO_URL: '' }, window.PIPER_CONFIG || {});
 var QS = new URLSearchParams(location.search);
 var IN_GAS = typeof google !== 'undefined' && !!(google.script && google.script.run);
-var MODE = (QS.has('demo') || CFG.DEMO) ? 'demo' : IN_GAS ? 'gas' : (CFG.API_URL ? 'web' : 'setup');
+var MODE;
+function computeMode() { MODE = (QS.has('demo') || CFG.DEMO) ? 'demo' : IN_GAS ? 'gas' : (CFG.API_URL ? 'web' : 'setup'); }
+computeMode();
+/** GitHub copy: read the two links from config.js (kept separate so updating index.html never wipes them). */
+function loadConfig(then) {
+  if (IN_GAS || MODE === 'demo') return then();
+  var s = document.createElement('script');
+  s.src = 'config.js?v=' + Date.now();
+  s.onload = s.onerror = function () {
+    var ext = window.PIPER_CONFIG || {};
+    Object.keys(ext).forEach(function (k) { if (ext[k]) CFG[k] = ext[k]; });
+    computeMode(); then();
+  };
+  document.head.appendChild(s);
+}
 var VERSION = '1.0.0';
 var CACHE_KEY = 'piper.partners.cache.v1';
 var $app = document.getElementById('app');
@@ -423,6 +447,7 @@ function copyText(text, label) {
   else fallback();
 }
 function downloadFile(name, text, type) {
+  if (CFG.PREVIEW) return toast('In the real app this downloads ' + name + ' (opens in Excel or Google Sheets).');
   try {
     var blob = new Blob([text], { type: type || 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
@@ -617,8 +642,9 @@ var Demo = (function () {
       db.submissions.push(s);
       return { received: true };
     },
+    version: function () { return { v: 'demo' }; },
     bootstrap: function () {
-      return { me: ME, settings: db.settings, contacts: db.contacts, engagements: db.engagements, partnerships: db.partnerships,
+      return { dataVersion: 'demo', warnings: [], me: ME, settings: db.settings, contacts: db.contacts, engagements: db.engagements, partnerships: db.partnerships,
         submissions: db.submissions, pendingCount: db.submissions.filter(function (s) { return s.status === 'Pending'; }).length, serverTime: now() };
     },
     saveContact: function (p) {
@@ -748,7 +774,7 @@ var S = {
   pendTab: 'pending'
 };
 var IX = { byId: new Map(), eng: new Map(), px: new Map() };
-var VIEWS = ['directory', 'activity', 'partnerships', 'pending', 'health', 'settings', 'share'];
+var VIEWS = ['directory', 'activity', 'partnerships', 'pending', 'health', 'config', 'share'];
 
 function isAdmin() { return !!(S.d && S.d.me && S.d.me.isAdmin) && S.viewAs !== 'staff'; }
 function L() { return S.d.settings; }
@@ -856,7 +882,7 @@ function duplicatePairs() {
 function topbar() {
   var me = S.d.me, admin = isAdmin();
   var nav = [['directory', 'Directory'], ['activity', 'Activity'], ['partnerships', 'Partnerships']];
-  if (admin) nav.push(['pending', 'Pending'], ['health', 'Data health'], ['settings', 'Settings']);
+  if (admin) nav.push(['pending', 'Pending'], ['health', 'Data health'], ['config', 'Settings']);
   nav.push(['share', 'Partner form']);
   return html`
   <header class="topbar"><div class="topbar-in">
@@ -864,7 +890,7 @@ function topbar() {
     <nav class="nav" aria-label="Main">${nav.map(function (n) {
       return html`<a href="#${n[0]}" ${S.view === n[0] ? raw('aria-current="page"') : ''}>${n[1]}${n[0] === 'pending' && S.d.pendingCount ? html`<span class="badge-n">${S.d.pendingCount}</span>` : ''}</a>`;
     })}</nav>
-    <div class="me"><button class="me-btn" data-act="menu" aria-haspopup="true" aria-expanded="${S.menu}">
+    <div class="me">${MODE !== 'demo' ? html`<span class="live ${Live.ok ? '' : 'off'}" id="live" title="${Live.ok ? 'Live: changes from the sheet and other staff show up within seconds' : 'Can’t reach the sheet right now. Retrying…'}"><i></i><span>${Live.ok ? 'Live' : 'Reconnecting'}</span></span>` : ''}<button class="me-btn" data-act="menu" aria-haspopup="true" aria-expanded="${S.menu}">
       <span class="avatar">${initials({ first: me.name.split(' ')[0], last: me.name.split(' ').slice(-1)[0] })}</span>
       <span class="role-tag">${admin ? 'Admin' : 'Staff'}</span></button></div>
   </div>
@@ -878,6 +904,7 @@ function topbar() {
   </header>`;
 }
 function banner() {
+  if (isAdmin() && S.d.warnings && S.d.warnings.length) return html`<div class="banner warn" role="alert">${S.d.warnings.join(' ')}</div>`;
   if (MODE === 'demo') return html`<div class="banner"><b>Demo mode.</b> Sample people, nothing is saved.${CFG.DEMO ? '' : html` <button data-act="exit-demo">Exit demo</button>`}</div>`;
   return '';
 }
@@ -899,7 +926,7 @@ function body() {
     case 'partnerships': return viewPartnerships();
     case 'pending': return isAdmin() ? viewPending() : viewDirectory();
     case 'health': return isAdmin() ? viewHealth() : viewDirectory();
-    case 'settings': return isAdmin() ? viewSettings() : viewDirectory();
+    case 'config': return isAdmin() ? viewSettings() : viewDirectory();
     case 'share': return viewShare();
     default: return viewDirectory();
   }
@@ -907,7 +934,9 @@ function body() {
 function renderLayer() {
   var open = !!((S.drawer && IX.byId.get(S.drawer)) || S.modal);
   document.body.style.overflow = open ? 'hidden' : '';
+  var db = $layer.querySelector('.drawer-body'), keep = db ? db.scrollTop : 0;
   put($layer, html`${S.drawer ? drawerHtml() : ''}${S.modal ? modalHtml() : ''}`);
+  var db2 = $layer.querySelector('.drawer-body'); if (db2 && keep) db2.scrollTop = keep;
 }
 
 /* ================================================================ directory */
@@ -1269,6 +1298,7 @@ function acadRow(a) {
 function publicFormUrl() {
   var c = L().config;
   if (c.PUBLIC_FORM_URL) return c.PUBLIC_FORM_URL;
+  if (CFG.PREVIEW) return location.href.split('#')[0] + '#join';
   if (MODE === 'web' || MODE === 'demo') return location.origin + location.pathname + '?page=join' + (MODE === 'demo' ? '&demo' : '');
   return '';
 }
@@ -1287,12 +1317,12 @@ function viewShare() {
       <div><div class="label" style="margin-bottom:6px">Form link</div><div class="linkbox"><span class="grow">${url}</span><button class="btn sm" data-act="copy" data-text="${url}">${I('copy')} Copy</button></div></div>
       <div class="row"><a class="btn" href="${url}" target="_blank" rel="noopener">${I('ext')} Open the form</a>
         <button class="btn" data-act="qr-png">${I('download')} Download QR image</button>
-        <button class="btn" data-act="print-flyer">${I('print')} Print a sign</button></div>
+        ${CFG.PREVIEW ? '' : html`<button class="btn" data-act="print-flyer">${I('print')} Print a sign</button>`}</div>
       <p class="small muted" style="margin:0">Tip: put the printed sign on the check-in table at capstone night, career fairs, and advisory board meetings.</p>
     </div></div></div>
     <div class="card card-pad" style="margin-top:16px"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 class="section-title" style="margin:0">Invite email</h2>
       <button class="btn sm" data-act="copy" data-text="${invite}">${I('copy')} Copy</button></div><p class="notes">${invite}</p></div>`
-  : html`<div class="card card-pad warnbox">The public form link has not been set yet. ${isAdmin() ? html`Add it under <a href="#settings">Settings</a> → "Public partner form link".` : 'Ask an admin to add it in Settings.'}</div>`}`;
+  : html`<div class="card card-pad warnbox">The public form link has not been set yet. ${isAdmin() ? html`Add it under <a href="#config">Settings</a> → "Public partner form link".` : 'Ask an admin to add it in Settings.'}</div>`}`;
 }
 
 
@@ -1333,7 +1363,7 @@ var MODALS = {};
 
 /* ---------- add / edit / approve contact */
 MODALS.contact = function (m) {
-  var c = m.id ? IX.byId.get(m.id) : (m.draft || {});
+  var c = m.snap || (m.id ? IX.byId.get(m.id) : (m.draft || {}));
   c = Object.assign({ roles: [], academies: [], staff: [], status: 'Active' }, c);
   var s = L();
   var staffAll = uniq(s.staff.concat(c.staff)).sort();
@@ -1519,7 +1549,7 @@ function joinShell(content) {
   put($app, html`<div class="join-hero"><div class="join-hero-in">
       <div class="brand">${mark()}<div><b>${c.schoolName || 'Piper High School'}</b><span>Academies · Industry Partners</span></div></div>
       <h1>${c.formTitle || 'Partner with Piper'}</h1>${c.formIntro ? html`<p>${c.formIntro}</p>` : ''}</div></div>
-    ${MODE === 'demo' ? html`<div class="banner" style="margin-top:0">Demo: submissions go to the demo's Pending tab and are not saved.</div>` : ''}
+    ${MODE === 'demo' ? html`<div class="banner" style="margin-top:0">Demo: submissions go to the demo's Pending tab and are not saved.${CFG.PREVIEW ? html` <a href="#pending">See the staff side →</a>` : ''}</div>` : ''}
     <div class="join-wrap"><div class="card join-card">${content}</div>
     <p class="join-foot">Your information is shared only with Piper High School staff and is used only to invite you to work with students.</p></div>`);
 }
@@ -1600,7 +1630,7 @@ function submitJoin(form) {
 function centerCard(content) { put($app, html`<div style="padding:0 16px"><div class="card center-card">${mark()}${content}</div></div>`); }
 function renderSignIn(msg) {
   document.title = 'Sign in · Piper Industry Partners';
-  if (!CFG.STAFF_URL) return renderSetup('STAFF_URL is missing from the settings at the top of index.html.');
+  if (!CFG.STAFF_URL) return renderSetup('STAFF_URL is missing from config.js.');
   centerCard(html`<h1 style="margin:0 0 4px;font-size:24px;color:var(--piper-900)">Industry Partners</h1><p class="muted" style="margin:0 0 20px">Piper High School Academies · Staff sign-in</p>
     ${msg ? html`<div class="errbox" style="margin-bottom:16px;text-align:left">${msg}</div>` : ''}
     <a class="btn primary" href="${Auth.signInUrl()}" style="width:100%;min-height:48px">Sign in with your Piper Google account</a>
@@ -1610,7 +1640,7 @@ function renderSignIn(msg) {
 }
 function renderSetup(extra) {
   centerCard(html`<h1 style="margin:0 0 8px;font-size:22px;color:var(--piper-900)">Almost ready</h1>
-    <p class="muted">This copy of the app is not connected to the Google Sheet yet. Paste your two Apps Script links into <b>PIPER_CONFIG</b> at the top of <code>index.html</code> (see the setup guide).</p>
+    <p class="muted">This copy of the app is not connected to the Google Sheet yet. Paste your two Apps Script links into <code>config.js</code> next to <code>index.html</code> (see the setup guide).</p>
     ${extra ? html`<div class="warnbox" style="text-align:left;margin-bottom:12px">${extra}</div>` : ''}
     <a class="btn primary" href="?demo">Try the demo with sample data</a>`);
 }
@@ -1641,7 +1671,9 @@ function handleErr(e, form) {
 function saving(form, fn) {
   var btn = form && form.querySelector('[type=submit]'), label = btn && btn.innerHTML;
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  S.saving = true;
   return Promise.resolve().then(fn).catch(function (e) { handleErr(e, form); }).then(function () {
+    S.saving = false;
     if (btn && document.body.contains(btn)) { btn.disabled = false; btn.innerHTML = label; }
   });
 }
@@ -1705,10 +1737,10 @@ var ACT = {
     }))));
   },
   'add-contact': function () { openModal({ type: 'contact', draft: {} }); },
-  'edit-contact': function (el) { openModal({ type: 'contact', id: el.dataset.id }); },
+  'edit-contact': function (el) { openModal({ type: 'contact', id: el.dataset.id, snap: snapContact(el.dataset.id) }); },
   'conflict-load': function () {
     if (!S.conflict) return; upsert(S.d.contacts, S.conflict); S.conflict = null; reindex(); render();
-    openModal({ type: 'contact', id: S.modal.id }); toast('Loaded the latest version. Make your change again.');
+    openModal({ type: 'contact', id: S.modal.id, snap: snapContact(S.modal.id) }); toast('Loaded the latest version. Make your change again.');
   },
   'delete-contact': function (el) {
     var c = IX.byId.get(el.dataset.id), n = (IX.eng.get(c.id) || []).length;
@@ -1800,6 +1832,7 @@ var ACT = {
     });
   },
   'qr-png': function () {
+    if (CFG.PREVIEW) return toast('In the real app this saves a QR image you can drop into slides or flyers.');
     try {
       var q = qrcode(0, 'M'); q.addData(publicFormUrl()); q.make();
       var img = new Image();
@@ -1893,9 +1926,16 @@ var FORMS = {
           S.modal = null; afterChange(); toast('Added ' + displayName(r.contact) + ' to the directory');
         });
       }
-      var cur = m.id ? IX.byId.get(m.id) : null;
-      if (cur) c.id = cur.id;
-      return Backend.call('saveContact', { contact: c, expectedUpdated: cur ? cur.updated : '' }).then(function (r) {
+      var cur = m.id ? IX.byId.get(m.id) : null, payload = { contact: c };
+      if (m.snap) {
+        // Send only what this person changed, plus what it looked like when they opened it,
+        // so edits made at the same time in the sheet (or by another admin) are never overwritten.
+        var changes = { id: m.snap.id }, original = {}, n = 0;
+        Object.keys(c).forEach(function (k) { if (!sameVal(c[k], m.snap[k])) { changes[k] = c[k]; original[k] = m.snap[k] == null ? '' : m.snap[k]; n++; } });
+        if (!n) { S.modal = null; renderLayer(); toast('No changes'); return; }
+        payload = { contact: changes, original: original };
+      } else if (cur) c.id = cur.id;
+      return Backend.call('saveContact', payload).then(function (r) {
         upsert(S.d.contacts, r.contact);
         S.modal = null; S.drawer = r.contact.id; history.replaceState(null, '', '#c/' + r.contact.id);
         afterChange(); toast(r.unchanged ? 'No changes' : cur ? 'Saved' : 'Added ' + displayName(r.contact));
@@ -1997,9 +2037,11 @@ function route() {
   if (m) { S.drawer = m[1]; if (VIEWS.indexOf(S.view) < 0) S.view = 'directory'; }
   else { S.view = VIEWS.indexOf(h) >= 0 ? h : 'directory'; S.drawer = null; }
   S.menu = false;
-  document.title = { directory: 'Directory', activity: 'Participation', partnerships: 'Partnerships', pending: 'Pending', health: 'Data health', settings: 'Settings', share: 'Partner form' }[S.view] + ' · Piper Industry Partners';
+  document.title = { directory: 'Directory', activity: 'Participation', partnerships: 'Partnerships', pending: 'Pending', health: 'Data health', config: 'Settings', share: 'Partner form' }[S.view] + ' · Piper Industry Partners';
 }
 window.addEventListener('hashchange', function () {
+  if (location.hash === '#join' && !PUB.cfg) { S.drawer = null; S.modal = null; renderLayer(); return loadJoin(); }
+  if (PUB.cfg && location.hash !== '#join') { PUB.cfg = null; PUB.done = null; return startStaff(); }
   if (!S.d || PUB.cfg) return;
   var wasView = S.view; route();
   if (S.modal) S.modal = null;
@@ -2008,7 +2050,7 @@ window.addEventListener('hashchange', function () {
 });
 function applyBootstrap(d) {
   if (MODE !== 'demo') store.set(CACHE_KEY, { d: d, at: Date.now(), who: d.me.email });
-  S.d = d; S.loadedAt = Date.now(); reindex();
+  S.d = d; S.loadedAt = Date.now(); Live.have = d.dataVersion || Live.have; reindex();
 }
 function reload(silent) {
   S.refreshing = true; if (!silent) render();
@@ -2016,8 +2058,69 @@ function reload(silent) {
     function (e) { handleErr(e); })
     .then(function () { S.refreshing = false; if (S.d) { render(); if (!S.modal) renderLayer(); } });
 }
+function snapContact(id) { var c = IX.byId.get(id); if (!c) return null; var o = {}; Object.keys(c).forEach(function (k) { if (k.charAt(0) !== '_') o[k] = clone(c[k]); }); return o; }
+function sameVal(a, b) {
+  var n = function (v) { return Array.isArray(v) ? v.map(String).sort().join('\u0001') : String(v == null ? '' : v).trim(); };
+  return n(a) === n(b);
+}
+
+/* ================================================================ live updates
+   Every few seconds the app asks Google one tiny question: "has anything changed?"
+   If yes (someone edited the sheet, or another staff member saved), it quietly reloads. */
+var Live = {
+  have: null, timer: null, busy: false, ok: true, started: false, lastActivity: Date.now(), noticed: false,
+  start: function () { if (MODE === 'demo' || this.started) return; this.started = true; this.schedule(2500); },
+  every: function () { return Date.now() - this.lastActivity > 10 * 60e3 ? 30000 : 5000; },
+  schedule: function (ms) { var self = this; clearTimeout(this.timer); this.timer = setTimeout(function () { self.tick(); }, ms); },
+  tick: function () {
+    var self = this;
+    if (document.visibilityState !== 'visible' || !S.d || PUB.cfg) return self.schedule(self.every());
+    if (self.busy || S.saving) return self.schedule(1500);
+    self.busy = true;
+    Backend.call('version').then(function (d) {
+      self.ok = true;
+      if (self.have && d.v !== self.have) return silentRefresh();
+      if (!self.have) self.have = d.v;
+    }, function () { self.ok = false; })
+      .then(function () { self.busy = false; liveDot(); self.schedule(self.every()); });
+  }
+};
+function liveDot(flash) {
+  var el = document.getElementById('live'); if (!el) return;
+  el.classList.toggle('off', !Live.ok);
+  el.lastElementChild.textContent = Live.ok ? 'Live' : 'Reconnecting';
+  el.title = Live.ok ? 'Live: changes from the sheet and other staff show up within seconds' : 'Can’t reach the sheet right now. Retrying…';
+  if (flash) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+}
+function silentRefresh() {
+  return Backend.call('bootstrap').then(function (d) {
+    if (S.saving) return;                         // a save is in flight; the next check catches up
+    var settingsOpen = S.view === 'config';
+    applyBootstrap(d);
+    if (settingsOpen) {                           // never wipe someone's half-edited settings form
+      if (!Live.noticed) { Live.noticed = true; toast('Someone else changed data. Your settings form was left as is.'); }
+      return;
+    }
+    paintSoon();
+  });
+}
+/** Repaint after new data arrives, but never in the middle of a click or keystroke. */
+function paintSoon() {
+  var wait = Live.lastPress + 1200 - Date.now();
+  if (wait > 0) return setTimeout(paintSoon, wait);
+  if (S.saving) return setTimeout(paintSoon, 800);
+  render(); if (!S.modal) renderLayer();
+  liveDot(true);
+}
+Live.lastPress = 0;
+['click', 'keydown', 'mousemove', 'touchstart', 'scroll'].forEach(function (ev) {
+  document.addEventListener(ev, function () { Live.lastActivity = Date.now(); }, { passive: true });
+});
+['pointerdown', 'keydown'].forEach(function (ev) {
+  document.addEventListener(ev, function () { Live.lastPress = Date.now(); }, { passive: true, capture: true });
+});
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible' && S.d && !S.modal && !PUB.cfg && Date.now() - S.loadedAt > 5 * 60e3) reload(true);
+  if (document.visibilityState === 'visible') { Live.lastActivity = Date.now(); if (Live.started) Live.schedule(300); }
 });
 function startStaff() {
   if (MODE === 'setup') return renderSetup();
@@ -2028,7 +2131,7 @@ function startStaff() {
     S.d = cached.d; reindex(); route(); S.refreshing = true; render(); renderLayer();
   } else renderLoading();
   Backend.call('bootstrap').then(function (d) {
-    applyBootstrap(d); S.refreshing = false; route(); render(); renderLayer();
+    applyBootstrap(d); S.refreshing = false; route(); render(); renderLayer(); Live.start();
   }, function (e) {
     S.refreshing = false;
     if (e.code === 'AUTH' || e.code === 'FORBIDDEN') {
@@ -2047,7 +2150,7 @@ function start() {
     });
     return;
   }
-  if (QS.get('page') === 'join') loadJoin(); else startStaff();
+  loadConfig(function () { if (QS.get('page') === 'join' || location.hash === '#join') loadJoin(); else startStaff(); });
 }
 start();
 window.__piper = { S: S, MODE: MODE, Backend: Backend };

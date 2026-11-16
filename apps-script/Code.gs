@@ -11,7 +11,7 @@
  * First time: run setup() once from the editor (Run > setup).
  */
 
-var APP_VERSION = '1.0.0';
+var APP_VERSION = '1.1.0';
 var SEP = '; ';
 var TOKEN_DAYS = 14;
 var STATUSES = ['Active', 'Inactive', 'Do Not Contact'];
@@ -101,13 +101,12 @@ function doPost(e) {
   var req;
   try { req = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return json_({ ok: false, code: 'BAD_REQUEST', error: 'Request was not valid JSON.' }); }
-  var user = userFromToken_(req.token);
-  return json_(route_(req, user));
+  return json_(route_(req, function () { return userFromToken_(req.token); }));
 }
 
 /** Called by the Apps Script-hosted copy of the app through google.script.run. Auth = Google session. */
 function api(req) {
-  return route_(req || {}, userFromSession_());
+  return route_(req || {}, userFromSession_);
 }
 
 /* ================================================================== router */
@@ -115,7 +114,8 @@ function api(req) {
 var ACTIONS = {
   // public
   publicConfig: { level: 'public', fn: publicConfig_ },
-  submitPartner: { level: 'public', fn: submitPartner_ },
+  submitPartner: { level: 'public', fn: submitPartner_, writes: true },
+  version: { level: 'public', fn: function () { return { v: getVersion_() }; } },   // cheap "has anything changed?" check
   // any Piper staff
   whoami: { level: 'staff', fn: function (p, u) { return { email: u.email, isAdmin: u.isAdmin, name: nameFromEmail_(u.email) }; } },
   bootstrap: { level: 'staff', fn: bootstrap_ },
@@ -133,16 +133,18 @@ var ACTIONS = {
   signOutEveryone: { level: 'admin', fn: signOutEveryone_ }
 };
 
-function route_(req, user) {
+function route_(req, getUser) {
   try {
     var a = ACTIONS[req.action];
     if (!a) throw err_('BAD_REQUEST', 'Unknown action: ' + req.action);
+    var user = a.level === 'public' ? null : getUser();
     if (a.level !== 'public') {
       if (!user || !user.email) throw err_('AUTH', 'Please sign in with your Piper Google account.');
       if (!user.ok) throw err_('FORBIDDEN', 'Only ' + staffDomain_() + ' accounts can use the staff side. You are signed in as ' + user.email + '.');
       if (a.level === 'admin' && !user.isAdmin) throw err_('FORBIDDEN', 'Only admins can make changes. Ask an admin to add you on the Settings tab.');
     }
     var data = a.fn(req.payload || {}, user || {});
+    if (a.level === 'admin' || a.writes) bumpVersion_();
     return { ok: true, data: data, version: APP_VERSION };
   } catch (e) {
     if (e && e.code) return { ok: false, code: e.code, error: e.message, data: e.data };
@@ -343,6 +345,7 @@ function writeSettings_(s) {
   sh.clearContents();
   sh.getRange(1, 1, rows.length, SETTINGS_HEADERS.length).setNumberFormat('@').setValues(rows);
   settingsCache_ = null;
+  bumpVersion_();
 }
 
 function publicSettings_(user, includeAdmin) {
@@ -366,12 +369,33 @@ function publicSettings_(user, includeAdmin) {
 /* ================================================================== reads */
 
 function bootstrap_(p, user) {
-  var contacts = readTable_('contacts').rows.map(clean_);
-  var engagements = readTable_('engagements').rows.map(clean_);
-  var partnerships = readTable_('partnerships').rows.map(clean_);
-  var subs = readTable_('submissions').rows.map(clean_);
+  var dataVersion = getVersion_();           // read first, so a change made mid-read is caught by the next check
+  var tables = {};
+  ['contacts', 'engagements', 'partnerships'].forEach(function (k) { tables[k] = readTable_(k); });
+  // Safety net: rows typed or pasted into the sheet that have no ID yet (or a copied ID) get fixed now.
+  if (['contacts', 'engagements', 'partnerships'].some(function (k) { return tables[k].orphans.length || dupeIds_(tables[k]).length; })) {
+    repairTables_('spreadsheet');
+    ['contacts', 'engagements', 'partnerships'].forEach(function (k) { tables[k] = readTable_(k); });
+  }
+  try { maybeRebuildRoleTabs_(); } catch (e) { console.warn('role tab check failed ' + e); }
+  var contacts = tables.contacts.rows.map(clean_);
+  var engagements = tables.engagements.rows.map(clean_);
+  var partnerships = tables.partnerships.rows.map(clean_);
+  var subsT = readTable_('submissions');
+  var subs = subsT.rows.map(clean_);
   var pending = subs.filter(function (s) { return (s.status || 'Pending') === 'Pending'; });
+  // "Last positive contact" can never be older than the newest participation record
+  var newest = {};
+  engagements.forEach(function (e) { if (e.contactId && e.date && (!newest[e.contactId] || newest[e.contactId] < e.date)) newest[e.contactId] = e.date; });
+  contacts.forEach(function (c) { if (newest[c.id] && (!c.lastContact || c.lastContact < newest[c.id])) c.lastContact = newest[c.id]; });
+  var warnings = [];
+  [tables.contacts, tables.engagements, tables.partnerships, subsT].forEach(function (t) {
+    t.missing.forEach(function (h) {
+      warnings.push('The "' + t.sh.getName() + '" tab has no column named "' + h + '". If someone renamed it, change the name back. (Moving columns is fine.)');
+    });
+  });
   return {
+    dataVersion: dataVersion, warnings: user.isAdmin ? warnings : [],
     me: { email: user.email, isAdmin: user.isAdmin, name: nameFromEmail_(user.email) },
     settings: publicSettings_(user, true),
     contacts: contacts, engagements: engagements, partnerships: partnerships,
@@ -477,13 +501,20 @@ function saveContact_(p, user) {
       log_(user.email, 'add', rec.id, displayName_(rec));
     } else {
       rec = findById_(t, p.contact.id);
-      if (p.expectedUpdated && String(rec.updated) !== String(p.expectedUpdated)) {
-        throw err_('CONFLICT', displayName_(rec) + ' was changed by ' + (rec.updatedBy || 'someone') + ' at ' + rec.updated + '. Reload to see their changes.', clean_(rec));
-      }
-      var changed = [];
+      // Field-level check: only refuse if someone else changed the SAME field since this person opened the form.
+      var orig = p.original ? normalizeContact_(p.original, s) : null;
+      var changed = [], conflicts = [];
       Object.keys(input).forEach(function (k) {
-        if (JSON.stringify(rec[k]) !== JSON.stringify(input[k])) { changed.push(k); rec[k] = input[k]; }
+        if (sameVal_(rec[k], input[k])) return;
+        if (orig && orig[k] !== undefined && !sameVal_(orig[k], rec[k])) { conflicts.push(k); return; }
+        if (!orig && p.expectedUpdated && String(rec.updated) !== String(p.expectedUpdated)) { conflicts.push(k); return; }
+        changed.push(k);
       });
+      if (conflicts.length) {
+        throw err_('CONFLICT', displayName_(rec) + "'s " + conflicts.map(fieldLabel_).join(', ') + ' just changed (by ' + (rec.updatedBy || 'someone') +
+          '). Nothing was saved. Load their version, then make your change again.', clean_(rec));
+      }
+      changed.forEach(function (k) { rec[k] = input[k]; });
       if (!changed.length) return { contact: clean_(rec), unchanged: true };
       rec.updated = now_(); rec.updatedBy = user.email;
       writeRecord_(t, rec);
@@ -730,23 +761,26 @@ function nameFromEmail_(email) {
     .map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
 }
 
-/** Split a multi-value cell. Accepts "a; b" and, for known values, "a, b". Canonicalizes case. */
+/**
+ * Split a multi-value cell typed by a person or the app. Accepts "a; b", "a, b", any capitalization,
+ * and known values that themselves contain commas ("Design, Production & Aviation"). Unknown values are kept.
+ */
 function toList_(v, known) {
   if (Array.isArray(v)) v = v.join(';');
   var s = String(v === null || v === undefined ? '' : v).trim();
   if (!s) return [];
-  var parts = s.split(/\s*[;\n]\s*/).filter(String);
-  var lowerKnown = known ? known.map(function (k) { return k.toLowerCase(); }) : null;
-  var canon = function (x) { if (!lowerKnown) return x; var i = lowerKnown.indexOf(x.toLowerCase()); return i >= 0 ? known[i] : x; };
-  var out = [];
-  parts.forEach(function (p) {
-    if (p.indexOf(',') >= 0 && (!lowerKnown || lowerKnown.indexOf(p.toLowerCase()) < 0)) {
-      var sub = p.split(/\s*,\s*/).filter(String);
-      if (!lowerKnown || sub.every(function (x) { return lowerKnown.indexOf(x.toLowerCase()) >= 0; })) { sub.forEach(function (x) { out.push(canon(x)); }); return; }
+  if (!known || !known.length) return uniq_(s.split(/\s*[;,\n]\s*/).filter(String));
+  var found = [], rest = s;
+  known.slice().sort(function (a, b) { return b.length - a.length; }).forEach(function (k) {
+    var rx = new RegExp('(^|[;,\\n])\\s*' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(?=[;,\\n]|$)', 'i'), m;
+    while ((m = rx.exec(rest))) {
+      found.push({ i: m.index, v: k });
+      rest = rest.slice(0, m.index) + m[1] + new Array(m[0].length - m[1].length + 1).join(' ') + rest.slice(m.index + m[0].length);
     }
-    out.push(canon(p));
   });
-  return uniq_(out);
+  var re = /[^;,\n]+/g, m2;
+  while ((m2 = re.exec(rest))) { var x = m2[0].trim(); if (x) found.push({ i: m2.index, v: x }); }
+  return uniq_(found.sort(function (a, b) { return a.i - b.i; }).map(function (f) { return f.v; }));
 }
 
 function knownOnly_(v, known) { return toList_(v, known).filter(function (x) { return known.indexOf(x) >= 0; }); }
@@ -800,7 +834,7 @@ function readTable_(key) {
     listKnown.roles = s.roles.map(function (r) { return r.name; });
     listKnown.academies = s.academies.map(function (a) { return a.name; });
   }
-  var rows = [];
+  var rows = [], orphans = [];
   for (var i = 1; i < values.length; i++) {
     var row = values[i], rec = { _row: i + 1 };
     spec.fields.forEach(function (f) {
@@ -808,9 +842,38 @@ function readTable_(key) {
       var raw = idx >= 0 ? row[idx] : '';
       rec[f[0]] = f[2] === 'list' ? toList_(raw, listKnown[f[0]] || null) : fromCell_(raw, f[2]);
     });
-    if (spec.prefix ? rec.id : rec.timestamp) rows.push(rec);
+    rec._orig = snapshot_(rec);
+    if (!spec.prefix) { if (rec.timestamp) rows.push(rec); continue; }
+    var hasData = hasData_(key, rec);
+    if (rec.id && (hasData || key === 'submissions')) rows.push(rec);   // an ID on an otherwise cleared row = deleted
+    else if (!rec.id && hasData) orphans.push(rec);                   // typed or pasted in the sheet, needs an ID
   }
-  return { key: key, sh: sh, headers: headers, map: map, rows: rows, width: lastCol };
+  var missing = spec.fields.filter(function (f) { return map[f[0]] < 0; }).map(function (f) { return f[1]; });
+  return { key: key, sh: sh, headers: headers, map: map, rows: rows, orphans: orphans, missing: missing, width: lastCol };
+}
+
+var IDENTITY = {
+  contacts: ['first', 'last', 'email', 'company', 'phone', 'profession'],
+  engagements: ['contactId', 'contactName', 'activity'],
+  partnerships: ['company', 'partnerName'],
+  submissions: ['first', 'last', 'email']
+};
+function hasData_(key, rec) {
+  return (IDENTITY[key] || []).some(function (k) { var v = rec[k]; return Array.isArray(v) ? v.length > 0 : String(v || '').trim() !== ''; });
+}
+function snapshot_(rec) {
+  var o = {};
+  Object.keys(rec).forEach(function (k) { if (k.charAt(0) !== '_') o[k] = JSON.stringify(rec[k]); });
+  return o;
+}
+/** Equal for our purposes: lists compare without regard to order, text without outer spaces. */
+function sameVal_(a, b) {
+  var n = function (v) { return Array.isArray(v) ? v.map(String).sort().join('\u0001') : String(v === null || v === undefined ? '' : v).trim(); };
+  return n(a) === n(b);
+}
+function fieldLabel_(k) {
+  var f = SCHEMA.contacts.fields.filter(function (x) { return x[0] === k; })[0];
+  return f ? f[1].toLowerCase() : k;
 }
 
 function blank_(key) {
@@ -821,7 +884,7 @@ function blank_(key) {
 
 function clean_(rec) {
   var o = {};
-  Object.keys(rec).forEach(function (k) { if (k !== '_row') o[k] = rec[k]; });
+  Object.keys(rec).forEach(function (k) { if (k.charAt(0) !== '_') o[k] = rec[k]; });
   return o;
 }
 
@@ -851,16 +914,26 @@ function locateRow_(t, rec) {
   throw err_('NOT_FOUND', 'Record ' + rec.id + ' disappeared from the sheet. Reload and try again.');
 }
 
-function writeRecord_(t, rec) {
-  var row = locateRow_(t, rec);
-  var width = Math.max(t.headers.length, t.sh.getLastColumn());
-  var range = t.sh.getRange(row, 1, 1, width);
-  var cur = range.getValues()[0];
+/**
+ * Writes only the cells this request changed. Everything else in the row (including edits someone is
+ * making in the sheet right now, extra columns, and formulas) is left alone.
+ */
+function writeRecord_(t, rec, opts) {
+  var row = opts && opts.row ? opts.row : locateRow_(t, rec);
+  var cells = [];
   SCHEMA[t.key].fields.forEach(function (f) {
     var idx = t.map[f[0]];
-    if (idx >= 0) cur[idx] = toCell_(rec[f[0]], f[2]);
+    if (idx < 0) return;
+    if (rec._orig && rec._orig[f[0]] === JSON.stringify(rec[f[0]])) return;
+    cells.push({ col: idx + 1, val: toCell_(rec[f[0]], f[2]) });
   });
-  range.setValues([cur]);
+  cells.sort(function (a, b) { return a.col - b.col; });
+  for (var i = 0; i < cells.length;) {             // write runs of neighboring cells together
+    var j = i; while (j + 1 < cells.length && cells[j + 1].col === cells[j].col + 1) j++;
+    t.sh.getRange(row, cells[i].col, 1, j - i + 1).setValues([cells.slice(i, j + 1).map(function (c) { return c.val; })]);
+    i = j + 1;
+  }
+  rec._orig = snapshot_(rec);
 }
 
 function appendRecords_(t, recs) {
@@ -874,7 +947,7 @@ function appendRecords_(t, recs) {
   });
   var start = t.sh.getLastRow() + 1;
   t.sh.getRange(start, 1, rows.length, width).setValues(rows);
-  recs.forEach(function (rec, i) { rec._row = start + i; });
+  recs.forEach(function (rec, i) { rec._row = start + i; rec._orig = snapshot_(rec); });
 }
 
 function deleteRecords_(t, recs) {
@@ -888,6 +961,188 @@ function log_(user, action, record, details) {
     if (!sh) return;
     sh.appendRow([now_(), user, action, record, String(details || '').slice(0, 500)].map(safeCell_));
   } catch (e) { console.warn('log failed ' + e); }
+}
+
+/* ================================================================== live updates */
+
+/** A number that changes whenever anything changes (app saves or sheet edits). The app checks it every few seconds. */
+function getVersion_() {
+  var v = null;
+  try { v = CacheService.getScriptCache().get('DATA_VERSION'); } catch (e) {}
+  if (!v) {
+    v = PropertiesService.getScriptProperties().getProperty('DATA_VERSION') || '0';
+    try { CacheService.getScriptCache().put('DATA_VERSION', v, 21600); } catch (e) {}
+  }
+  return v;
+}
+function bumpVersion_() {
+  var v = Date.now() + '.' + Math.floor(Math.random() * 1000);
+  PropertiesService.getScriptProperties().setProperty('DATA_VERSION', v);
+  try { CacheService.getScriptCache().put('DATA_VERSION', v, 21600); } catch (e) {}
+  return v;
+}
+
+/* ================================================================== people working directly in the sheet */
+
+function keyForSheet_(name) {
+  for (var k in SCHEMA) if (SCHEMA[k].sheet === name) return k;
+  return null;
+}
+function userFromEvent_(e) {
+  try { var em = e && e.user && e.user.getEmail && e.user.getEmail(); if (em) return String(em).toLowerCase(); } catch (x) {}
+  try { var a = Session.getActiveUser().getEmail(); if (a) return String(a).toLowerCase(); } catch (x) {}
+  return 'spreadsheet';
+}
+
+/** Installed by setup(). Runs after every edit anyone makes in the sheet. */
+function onSheetEdit(e) {
+  try {
+    bumpVersion_();
+    var sh = e && e.range && e.range.getSheet();
+    if (!sh) return;
+    var name = sh.getName();
+    settingsCache_ = null;
+    if (name === 'Settings') { maybeRebuildRoleTabs_(); return; }
+    var key = keyForSheet_(name);
+    if (!key || key === 'log' || key === 'submissions') return;
+    var first = e.range.getRow(), last = first + e.range.getNumRows() - 1;
+    if (first === 1) { maybeRebuildRoleTabs_(); if (last === 1) return; }
+    stampRows_(key, Math.max(first, 2), last, userFromEvent_(e));
+  } catch (err) { console.error('onSheetEdit: ' + (err && err.stack || err)); }
+}
+
+/** Installed by setup(). Runs on structure changes: rows/columns added, removed, moved, sorted. */
+function onSheetChange(e) {
+  try {
+    var type = e && e.changeType;
+    if (type === 'FORMAT' || type === 'EDIT') return;     // formatting is irrelevant; edits are handled by onSheetEdit
+    bumpVersion_();
+    settingsCache_ = null;
+    maybeRebuildRoleTabs_();
+    if (type !== 'REMOVE_ROW' && type !== 'REMOVE_COLUMN') repairTables_(userFromEvent_(e));
+  } catch (err) { console.error('onSheetChange: ' + (err && err.stack || err)); }
+}
+
+function dupeIds_(t) {
+  var seen = {}, out = [];
+  t.rows.forEach(function (r) { if (!r._row) return; if (seen[r.id]) out.push(r); else seen[r.id] = 1; });
+  return out;
+}
+
+function contactLookup_(ct) {
+  var byId = {}, byKey = {};
+  var add = function (k, c) { k = String(k || '').toLowerCase().replace(/\s+/g, ' ').trim(); if (!k) return; var l = byKey[k] = byKey[k] || []; if (l.indexOf(c) < 0) l.push(c); };
+  ct.rows.forEach(function (c) {
+    if (!c._row) return;
+    byId[c.id] = c;
+    add(displayName_(c), c); add([c.first, c.last].filter(String).join(' '), c);
+    String(c.email || '').split(/[\s,;]+/).forEach(function (em) { add(em, c); });
+  });
+  return {
+    byId: byId,
+    find: function (text) { var l = byKey[String(text || '').toLowerCase().replace(/\s+/g, ' ').trim()]; return l && l.length === 1 ? l[0] : null; }
+  };
+}
+
+/** Fill in IDs and bookkeeping for rows a person edited in the sheet. */
+function stampRows_(key, from, to, who) {
+  if (to < from) return;
+  var lock = lock_();
+  try {
+    var t = readTable_(key);
+    var ct = key === 'contacts' ? t : readTable_('contacts');
+    var look = contactLookup_(ct), now = now_();
+    var touched = {}, roleNames = settings_().roles.map(function (r) { return r.name; });
+    var ids = {}; t.rows.forEach(function (r) { if (r._row < from || r._row > to) ids[r.id] = 1; });
+    t.rows.concat(t.orphans).forEach(function (rec) {
+      if (rec._row < from || rec._row > to) return;
+      var isNew = !rec.id || ids[rec.id];             // no ID yet, or a copied row carrying someone else's ID
+      if (isNew) { rec.id = nextId_(t, key); }
+      ids[rec.id] = 1;
+      fillDefaults_(key, rec, isNew, who, now, look);
+      if (key === 'contacts') { rec.updated = now; rec.updatedBy = who; }
+      if (key === 'partnerships') { rec.updated = now; rec.updatedBy = who; }
+      if (key === 'engagements') bumpContactFromEngagement_(rec, look, roleNames, touched, who, now);
+      writeRecord_(t, rec, { row: rec._row });
+      if (isNew) log_(who, 'add-in-sheet', rec.id, key === 'contacts' ? displayName_(rec) : (rec.contactName || rec.company || ''));
+    });
+    Object.keys(touched).forEach(function (id) { writeRecord_(ct, touched[id]); });
+  } finally { lock.releaseLock(); }
+}
+
+/** Safety net used by bootstrap and onSheetChange: gives every real row an ID and removes copied IDs. */
+function repairTables_(who) {
+  var lock = lock_();
+  try {
+    var now = now_(), roleNames = settings_().roles.map(function (r) { return r.name; });
+    var ct = readTable_('contacts');
+    ['contacts', 'engagements', 'partnerships'].forEach(function (key) {
+      var t = key === 'contacts' ? ct : readTable_(key);
+      var fix = t.orphans.concat(dupeIds_(t));
+      if (!fix.length) return;
+      var look = contactLookup_(ct), touched = {};
+      fix.forEach(function (rec) {
+        rec.id = nextId_(t, key);
+        fillDefaults_(key, rec, true, who, now, look);
+        if (key === 'engagements') bumpContactFromEngagement_(rec, look, roleNames, touched, who, now);
+        writeRecord_(t, rec, { row: rec._row });
+        log_(who, 'add-in-sheet', rec.id, key === 'contacts' ? displayName_(rec) : (rec.contactName || rec.company || ''));
+      });
+      Object.keys(touched).forEach(function (id) { writeRecord_(ct, touched[id]); });
+    });
+  } finally { lock.releaseLock(); }
+}
+
+function fillDefaults_(key, rec, isNew, who, now, look) {
+  if (key === 'contacts') {
+    if (!rec.status) rec.status = 'Active';
+    if (rec.email) rec.email = String(rec.email).trim().toLowerCase();
+    if (isNew) {
+      if (!rec.source) rec.source = 'Added in spreadsheet';
+      if (!rec.created) rec.created = now;
+      if (!rec.createdBy) rec.createdBy = who;
+      rec.updated = now; rec.updatedBy = who;
+    }
+  } else if (key === 'engagements') {
+    var c = rec.contactId && look.byId[rec.contactId];
+    if (!c && rec.contactName) { c = look.find(rec.contactName); if (c) rec.contactId = c.id; }
+    if (c && !rec.contactName) rec.contactName = displayName_(c);
+    if (!rec.date) rec.date = today_();
+    if (isNew) { if (!rec.loggedBy) rec.loggedBy = who; if (!rec.loggedAt) rec.loggedAt = now; }
+  } else if (key === 'partnerships') {
+    if (!rec.status) rec.status = 'Active';
+    if (!rec.contactId) { var p = look.find(rec.email) || look.find(rec.partnerName); if (p) rec.contactId = p.id; }
+    if (isNew) { rec.updated = now; rec.updatedBy = who; }
+  }
+}
+
+function bumpContactFromEngagement_(rec, look, roleNames, touched, who, now) {
+  var c = rec.contactId && look.byId[rec.contactId];
+  if (!c || !rec.date) return;
+  var changed = false;
+  if (!c.lastContact || c.lastContact < rec.date) { c.lastContact = rec.date; changed = true; }
+  if (rec.activity && roleNames.indexOf(rec.activity) >= 0 && c.roles.indexOf(rec.activity) < 0) { c.roles.push(rec.activity); changed = true; }
+  if (changed) { c.updated = now; c.updatedBy = who; touched[c.id] = c; }
+}
+
+/** Rebuild the role tabs only when the Contacts column layout or the role list actually changed. */
+function maybeRebuildRoleTabs_() {
+  if (PropertiesService.getScriptProperties().getProperty('ROLE_SIG') !== roleSignature_()) rebuildRoleTabs_();
+}
+function roleSignature_() {
+  var sh = ss_().getSheetByName('Contacts');
+  var head = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].join('|');
+  settingsCache_ = null;
+  return head + '#' + settings_().roles.map(function (r) { return r.name; }).join('|');
+}
+
+function installTriggers_() {
+  var ss = ss_();
+  ScriptApp.getProjectTriggers().forEach(function (tr) {
+    if (['onSheetEdit', 'onSheetChange'].indexOf(tr.getHandlerFunction()) >= 0) ScriptApp.deleteTrigger(tr);
+  });
+  ScriptApp.newTrigger('onSheetEdit').forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger('onSheetChange').forSpreadsheet(ss).onChange().create();
 }
 
 /* ================================================================== setup & sheet menu */
@@ -942,26 +1197,56 @@ function setup() {
       var col = head.indexOf(f[1]) + 1;
       sh.getRange(2, col, rows, 1).setNumberFormat(f[2] === 'date' ? 'yyyy-mm-dd' : '@');
     });
+    var colOf = function (h) { return head.indexOf(h) + 1; };
+    var dv = function (h, rule) { if (colOf(h)) sh.getRange(2, colOf(h), rows, 1).setDataValidation(rule.setAllowInvalid(true).build()); };
+    var list = function (vals) { return SpreadsheetApp.newDataValidation().requireValueInList(vals, true); };
+    var fromSettings = function (settingsHeader) {
+      var st = ss.getSheetByName('Settings'), sh2 = st.getRange(1, 1, 1, st.getLastColumn()).getValues()[0].map(String);
+      var c = sh2.indexOf(settingsHeader) + 1;
+      return c ? SpreadsheetApp.newDataValidation().requireValueInRange(st.getRange(2, c, 200, 1), true) : null;
+    };
+    var note = function (h, text) { if (colOf(h)) sh.getRange(1, colOf(h)).setNote(text); };
+    spec.fields.forEach(function (f) { if (f[2] === 'date') dv(f[1], SpreadsheetApp.newDataValidation().requireDate()); });
     if (key === 'contacts') {
-      var stCol = head.indexOf('Status') + 1;
-      sh.getRange(2, stCol, rows, 1).setDataValidation(SpreadsheetApp.newDataValidation()
-        .requireValueInList(STATUSES, true).setAllowInvalid(true).build());
-      var avCol = head.indexOf('Availability') + 1;
-      sh.getRange(2, avCol, rows, 1).setDataValidation(SpreadsheetApp.newDataValidation()
-        .requireValueInList(AVAILABILITY, true).setAllowInvalid(true).build());
+      dv('Status', list(STATUSES));
+      dv('Availability', list(AVAILABILITY));
+      var rel = fromSettings('Relationships'); if (rel) dv('Relationship', rel);
+      note('ID', 'Filled in automatically when you add a person. Leave it alone: it connects the row to its history.');
+      note('Roles', 'Type one or more, separated by ; or a comma. Example: Client; Mock Interview. The list of roles is on the Settings tab.');
+      note('Academies', 'Type one or more, separated by ;  Example: Arts & Media; Public Services. The list is on the Settings tab.');
+      note('Piper Staff Contact', 'One or more names, separated by ; or a comma.');
+      note('Last Positive Contact', 'Fills in automatically when participation is logged. Double-click for a date picker.');
     }
+    if (key === 'engagements') {
+      var act = fromSettings('Roles'); if (act) dv('Activity', act);
+      note('Contact Name', 'Type the person\'s name exactly as it appears on Contacts (or their email). The Contact ID fills in automatically.');
+      note('ID', 'Filled in automatically.');
+    }
+    if (key === 'partnerships') {
+      dv('Type', list(PARTNERSHIP_TYPES)); dv('Status', list(['Active', 'Past']));
+      note('ID', 'Filled in automatically.');
+      note('Contact ID', 'Fills in automatically when the email or partner name matches someone on Contacts.');
+    }
+    // Warn (but allow) anyone renaming a column header, since the app finds columns by these names.
+    sh.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function (pr) { if (/^Industry Partners:/.test(pr.getDescription())) pr.remove(); });
+    sh.getRange(1, 1, 1, head.length).protect().setWarningOnly(true)
+      .setDescription('Industry Partners: column names. Moving columns is fine; renaming one disconnects it from the app.');
   });
   secret_();
   rebuildRoleTabs_();
+  installTriggers_();
+  repairTables_(String(Session.getEffectiveUser().getEmail()));
+  bumpVersion_();
   log_(String(Session.getEffectiveUser().getEmail()), 'setup', '', 'Setup / repair ran (v' + APP_VERSION + ')');
-  try { SpreadsheetApp.getUi().alert('Industry Partners setup is complete.\n\nNext: Deploy > New deployment (see the setup guide).'); } catch (e) {}
+  console.log('Industry Partners setup is complete. Next: Deploy > New deployment (see the setup guide).');
+  try { ss.toast('Setup is complete. Next: Deploy > New deployment in Apps Script.', 'Industry Partners', 10); } catch (e) {}
   return 'ok';
 }
 
 function rebuildRoleTabs() { rebuildRoleTabs_(); }
 function menuSignOutEveryone() {
   signOutEveryone_({}, { email: String(Session.getEffectiveUser().getEmail()) });
-  try { SpreadsheetApp.getUi().alert('Done. Everyone using the GitHub app will need to sign in again.'); } catch (e) {}
+  try { ss_().toast('Done. Everyone using the GitHub app will need to sign in again.', 'Industry Partners', 10); } catch (e) {}
 }
 
 function colLetter_(n) { var s = ''; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
@@ -987,7 +1272,7 @@ function rebuildRoleTabs_() {
     var rx = role.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/"/g, '""');
     sh.getRange('A1').setFormula("=Contacts!A1:" + L + "1");
     sh.getRange('A2').setFormula('=IFERROR(SORT(FILTER(Contacts!A2:' + L + ', REGEXMATCH(Contacts!' + col('Roles') + '2:' + col('Roles') +
-      ', "(?i)(^|;)\\s*' + rx + '\\s*(;|$)"), Contacts!' + col('Status') + '2:' + col('Status') + '<>"Inactive", Contacts!' +
+      ', "(?i)(^|[;,])\\s*' + rx + '\\s*([;,]|$)"), Contacts!' + col('Status') + '2:' + col('Status') + '<>"Inactive", Contacts!' +
       col('Status') + '2:' + col('Status') + '<>"Do Not Contact"), ' + lastIdx + ', TRUE, ' + firstIdx + ', TRUE), "No active contacts with this role yet")');
     sh.getRange(1, 1, 1, head.length).setFontWeight('bold').setFontColor('#ffffff').setBackground('#7a5aa8');
     sh.setFrozenRows(1);
@@ -996,4 +1281,5 @@ function rebuildRoleTabs_() {
     sh.protect().setDescription('Live view of Contacts. Edit people on the Contacts tab or in the app.').setWarningOnly(true);
   });
   props.setProperty('ROLE_TABS', JSON.stringify(roles));
+  props.setProperty('ROLE_SIG', roleSignature_());
 }
