@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piper Industry Partners</title>
+<meta name="description" content="Piper High School Academies industry partner directory">
+<!--
+  Piper Industry Partners
+  This ONE file runs in two places:
+    1. GitHub Pages (main)   -> fill in PIPER_CONFIG below
+    2. Google Apps Script    -> paste this whole file into the script's "Index.html" (no edits needed)
+  Open with ?demo at the end of the address to try it with sample data.
+-->
+<script>
+window.PIPER_CONFIG = {
+  // "Public" Apps Script deployment URL (Who has access: Anyone). Ends in /exec
+  API_URL: '',
+  // "Staff" Apps Script deployment URL (Who has access: Anyone within piperschools.us). Ends in /exec
+  STAFF_URL: '',
+  // Optional: link to a logo image (PNG/SVG). Leave blank to use the built-in Piper "P" mark.
+  LOGO_URL: ''
+};
+</script>
+<style>
+:root{
+  --piper:#543484; --piper-600:#4a2d75; --piper-700:#3d2463; --piper-900:#26163f;
+  --piper-50:#f6f2fb; --piper-100:#ece4f6; --piper-200:#d9caee; --piper-300:#bba3de;
+  --ink:#1d1828; --ink-2:#3a3447; --muted:#6a6377; --line:#e5e0ec; --line-2:#d6cfe0;
+  --bg:#f6f5f9; --card:#ffffff; --ok:#17734a; --ok-bg:#e6f4ec; --warn:#9a5800; --warn-bg:#fdf1de;
+  --danger:#b42318; --danger-bg:#fdeceb; --focus:#7c4dcc;
+  --radius:12px; --radius-sm:8px; --shadow:0 1px 2px rgba(38,22,63,.06),0 4px 16px rgba(38,22,63,.06);
+  --shadow-lg:0 12px 40px rgba(38,22,63,.22);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--font)}
+a{color:var(--piper)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--muted)} .small{font-size:13px} .tiny{font-size:12px} .nowrap{white-space:nowrap}
+.grow{flex:1} .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap} .stack{display:grid;gap:12px}
+.hide{display:none!important}
+
+/* ---------- top bar */
+.topbar{background:var(--piper);color:#fff;position:sticky;top:0;z-index:30;box-shadow:0 2px 10px rgba(38,22,63,.25)}
+.topbar-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 20px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;min-width:0}
+.mark{width:36px;height:36px;border-radius:9px;background:#fff;color:var(--piper);display:grid;place-items:center;font-weight:800;font-size:21px;flex:none;letter-spacing:-1px}
+.mark img{width:100%;height:100%;object-fit:contain;border-radius:9px}
+.brand b{display:block;font-size:16px;line-height:1.1}
+.brand div span{display:block;font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav a{color:#fff;text-decoration:none;padding:8px 12px;border-radius:8px;font-size:14px;opacity:.85;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.nav a:hover{background:rgba(255,255,255,.1);opacity:1}
+.nav a[aria-current="page"]{background:rgba(255,255,255,.18);opacity:1;font-weight:600}
+.badge-n{background:#fff;color:var(--piper);border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center}
+.me{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+.me-btn{background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:999px;padding:4px 6px 4px 4px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.me-btn:hover{background:rgba(255,255,255,.2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--piper-100);color:var(--piper-700);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.role-tag{font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.9;padding-right:6px}
+.menu{position:absolute;right:20px;top:56px;background:#fff;color:var(--ink);border-radius:12px;box-shadow:var(--shadow-lg);min-width:240px;padding:6px;z-index:40}
+.menu .who{padding:10px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.menu button,.menu a{display:block;width:100%;text-align:left;background:none;border:0;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--ink);text-decoration:none;font-size:14px}
+.menu button:hover,.menu a:hover{background:var(--piper-50)}
+.banner{background:#fff4d6;color:#5c4100;text-align:center;font-size:13px;padding:7px 16px;border-bottom:1px solid #f0dfa8}
+.banner button{background:none;border:0;text-decoration:underline;color:inherit;cursor:pointer;padding:0 4px}
+.refreshing{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:var(--ink);color:#fff;font-size:13px;padding:7px 14px;border-radius:999px;z-index:60;box-shadow:var(--shadow-lg)}
+
+/* ---------- layout */
+main{max-width:1320px;margin:0 auto;padding:20px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 16px}
+.page-head h1{font-size:24px;margin:0;color:var(--piper-900);letter-spacing:-.01em}
+.page-head p{margin:4px 0 0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:18px}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px;font-weight:700}
+
+/* ---------- controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line-2);background:#fff;color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap;min-height:38px}
+.btn:hover{border-color:var(--piper-300);background:var(--piper-50)}
+.btn.primary{background:var(--piper);border-color:var(--piper);color:#fff}
+.btn.primary:hover{background:var(--piper-600)}
+.btn.danger{color:var(--danger);border-color:#f1c4c0}
+.btn.danger:hover{background:var(--danger-bg)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--piper-50)}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:13px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.icon{width:16px;height:16px;flex:none}
+.field{display:grid;gap:5px}
+.field>span,.label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.field small{color:var(--muted);font-size:12px}
+.input,select.input,textarea.input{width:100%;border:1px solid var(--line-2);border-radius:10px;background:#fff;padding:9px 12px;min-height:40px}
+textarea.input{min-height:84px;resize:vertical}
+.input:focus{border-color:var(--piper);outline:none;box-shadow:0 0 0 3px var(--piper-100)}
+.search{position:relative;flex:1;min-width:220px}
+.search .input{padding-left:38px;font-size:15px;min-height:44px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.req{color:var(--danger)}
+.chk{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:var(--piper);margin:1px 0 0;flex:none}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative;text-align:left;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:#fff;border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer;user-select:none;line-height:1.3}
+.chip:hover{border-color:var(--piper-300)}
+.chip[aria-pressed="true"],.chip.on{background:var(--piper);border-color:var(--piper);color:#fff}
+.chip .n{font-size:11px;opacity:.7}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+label.chip:has(input:checked){background:var(--piper);border-color:var(--piper);color:#fff}
+label.chip:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.tag{display:inline-flex;align-items:center;gap:5px;background:var(--piper-50);color:var(--piper-700);border:1px solid var(--piper-100);border-radius:6px;padding:1px 8px;font-size:12px;line-height:1.6;white-space:nowrap}
+.tag.plain{background:#f2f1f5;color:var(--ink-2);border-color:#e6e4ec}
+.acad{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.acad i{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.acad.box{border:1px solid var(--line);border-radius:6px;padding:1px 7px;background:#fff}
+.status{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px}
+.status.Active{background:var(--ok-bg);color:var(--ok)}
+.status.Inactive{background:#efeef2;color:var(--muted)}
+.status.Do-Not-Contact{background:var(--danger-bg);color:var(--danger)}
+
+/* ---------- directory */
+.dir{display:grid;grid-template-columns:270px minmax(0,1fr);gap:20px;align-items:start}
+.filters{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow:auto;padding:16px}
+.filters .group{padding:12px 0;border-top:1px solid var(--line)}
+.filters .group:first-child{border-top:0;padding-top:0}
+.filters h3{margin:0 0 8px;font-size:13px;color:var(--ink-2)}
+.filters .chips .chip{font-size:12.5px;padding:3px 10px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-2px 0 12px}
+.active-filters .chip{background:var(--piper-50);border-color:var(--piper-100);color:var(--piper-700)}
+.bulkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--piper-900);color:#fff;border-radius:12px;padding:8px 10px 8px 16px;margin-bottom:12px;position:sticky;top:68px;z-index:5}
+.bulkbar .btn{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}
+.bulkbar .btn:hover{background:rgba(255,255,255,.2)}
+.tbl{width:100%;border-collapse:separate;border-spacing:0}
+.tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line);background:#fbfafd;position:sticky;top:0}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover td{background:#faf8fd}
+.tbl tbody tr.sel td{background:var(--piper-50)}
+.tbl .cb{width:40px;padding-right:0}
+.tbl .cb input{width:18px;height:18px;accent-color:var(--piper);cursor:pointer}
+.who-cell b{display:block;font-weight:600}
+.who-cell .muted{font-size:13px}
+.cell-tags{display:flex;flex-wrap:wrap;gap:4px;max-width:260px}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--ink);margin:0 0 6px}
+.more{padding:14px;text-align:center;border-top:1px solid var(--line)}
+.count{font-weight:600;color:var(--ink-2)}
+.stale{color:var(--warn)}
+.filters-toggle{display:none}
+
+/* ---------- drawer & modal */
+.scrim{position:fixed;inset:0;background:rgba(29,24,40,.42);z-index:50;animation:fade .15s ease}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#fff;z-index:51;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;animation:slide .18s ease}
+.drawer-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:flex-start}
+.drawer-head .avatar{width:48px;height:48px;font-size:17px;background:var(--piper);color:#fff}
+.drawer-head h2{margin:0;font-size:20px;line-height:1.2}
+.drawer-body{padding:16px 20px 28px;overflow:auto;flex:1}
+.drawer-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.drawer section{margin-top:20px}
+.facts{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;margin:0}
+.facts dt{color:var(--muted);font-size:13px}
+.facts dd{margin:0;word-break:break-word}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.timeline li{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.timeline .date{font-weight:700;color:var(--piper-700);font-size:13px;min-width:86px}
+.notes{white-space:pre-wrap;background:#fbfafd;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
+.modal{position:fixed;inset:0;z-index:55;display:grid;place-items:center;padding:20px;overflow:auto}
+.modal .scrim{z-index:0}
+.modal-card{z-index:1;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);width:min(720px,100%);max-height:calc(100vh - 40px);display:flex;flex-direction:column;animation:pop .15s ease;position:relative}
+.modal-card.narrow{width:min(480px,100%)}
+.modal-head{padding:18px 22px 10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal-head h2{margin:0;font-size:19px;color:var(--piper-900)}
+.modal-body{padding:6px 22px 18px;overflow:auto}
+.modal-foot{padding:12px 22px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid var(--line)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.grid3{display:grid;grid-template-columns:100px 1fr 1fr;gap:12px 14px}
+.span2{grid-column:1/-1}
+.warnbox{background:var(--warn-bg);border:1px solid #f3d29a;color:#5d3a00;border-radius:10px;padding:10px 12px;font-size:14px}
+.errbox{background:var(--danger-bg);border:1px solid #f3c3bf;color:var(--danger);border-radius:10px;padding:10px 12px;font-size:14px}
+.okbox{background:var(--ok-bg);border:1px solid #bfe3cf;color:#0f5434;border-radius:10px;padding:10px 12px;font-size:14px}
+.x{background:none;border:0;cursor:pointer;border-radius:8px;padding:6px;color:var(--muted);display:grid;place-items:center}
+.x:hover{background:var(--piper-50);color:var(--ink)}
+@keyframes fade{from{opacity:0}} @keyframes slide{from{transform:translateX(30px);opacity:.4}} @keyframes pop{from{transform:scale(.98);opacity:.4}}
+
+/* ---------- other pages */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.stat{padding:14px 16px}
+.stat b{display:block;font-size:26px;color:var(--piper-900);line-height:1.1}
+.stat span{color:var(--muted);font-size:13px}
+.bars{display:grid;gap:6px}
+.bar-row{display:grid;grid-template-columns:170px 1fr 36px;gap:10px;align-items:center;font-size:13px}
+.bar-track{background:var(--piper-50);border-radius:6px;height:12px;overflow:hidden}
+.bar-fill{background:var(--piper);height:100%;border-radius:6px}
+.sub-card{padding:16px 18px;display:grid;gap:12px}
+.sub-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.match{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:0;padding:10px 14px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--piper);border-bottom-color:var(--piper)}
+.set-table{width:100%;border-collapse:collapse}
+.set-table td{padding:4px 4px;vertical-align:top}
+.set-table .input{min-height:36px;padding:7px 10px}
+.qr{background:#fff;padding:14px;border-radius:12px;border:1px solid var(--line);width:220px;height:220px;display:grid;place-items:center}
+.qr svg{width:100%;height:100%}
+.linkbox{display:flex;gap:8px;align-items:center;background:var(--piper-50);border:1px solid var(--piper-100);border-radius:10px;padding:8px 8px 8px 12px;word-break:break-all;font-size:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:12px;padding:11px 16px;z-index:80;box-shadow:var(--shadow-lg);font-size:14px;max-width:min(560px,calc(100% - 32px));display:flex;gap:12px;align-items:center}
+.toast.err{background:var(--danger)}
+.skel{background:linear-gradient(90deg,#eeeaf3,#f7f5fa,#eeeaf3);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:8px;height:14px}
+@keyframes sh{to{background-position:-200% 0}}
+.center-card{max-width:480px;margin:8vh auto;padding:32px;text-align:center}
+.center-card .mark{width:56px;height:56px;font-size:32px;border-radius:14px;margin:0 auto 14px;background:var(--piper);color:#fff}
+.spinner{width:28px;height:28px;border:3px solid var(--piper-100);border-top-color:var(--piper);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- public form */
+.join-hero{background:var(--piper);color:#fff;padding:36px 20px 76px}
+.join-hero-in{max-width:760px;margin:0 auto}
+.join-hero .brand{margin-bottom:22px}
+.join-hero h1{font-size:34px;margin:0 0 10px;letter-spacing:-.02em;line-height:1.1}
+.join-hero p{font-size:17px;opacity:.92;margin:0;max-width:640px}
+.join-wrap{max-width:760px;margin:-52px auto 40px;padding:0 16px}
+.join-card{padding:26px}
+.join-card fieldset{border:0;padding:0;margin:0 0 26px}
+.join-card legend{font-size:18px;font-weight:700;color:var(--piper-900);margin-bottom:4px;padding:0}
+.join-card .hint{color:var(--muted);margin:0 0 14px;font-size:14px}
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;gap:10px;border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;cursor:pointer;align-items:flex-start;background:#fff}
+.opt:hover{border-color:var(--piper-300)}
+.opt:has(input:checked){border-color:var(--piper);background:var(--piper-50);box-shadow:inset 0 0 0 1px var(--piper)}
+.opt input{width:18px;height:18px;accent-color:var(--piper);margin-top:2px;flex:none}
+.opt b{display:block;font-size:15px}
+.opt span{display:block;color:var(--muted);font-size:13px;line-height:1.4;margin-top:2px}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+.join-foot{text-align:center;color:var(--muted);font-size:13px;margin-top:18px}
+
+/* ---------- print flyer */
+.flyer{display:none}
+@media print{
+  body.printing>*:not(.flyer){display:none!important}
+  body.printing .flyer{display:block;text-align:center;padding:40px;font-family:var(--font)}
+  .flyer h1{font-size:40px;color:#543484;margin:0 0 10px}
+  .flyer .qrbig{width:360px;height:360px;margin:30px auto}
+  .flyer .qrbig svg{width:100%;height:100%}
+}
+
+/* ---------- responsive */
+@media (max-width:1000px){
+  .dir{grid-template-columns:1fr}
+  .filters{position:static;max-height:none;display:none}
+  .filters.open{display:block}
+  .filters-toggle{display:inline-flex}
+  .sub-grid{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .topbar-in{flex-wrap:wrap;padding:8px 14px;gap:8px}
+  .brand div span{display:none}
+  .nav{order:3;flex-basis:100%;margin:0 -6px}
+  .nav a{padding:7px 10px;font-size:13.5px}
+  .role-tag{display:none}
+  main{padding:14px 16px}
+  .page-head h1{font-size:21px}
+  .bulkbar{top:104px}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tr{position:relative;padding:12px 12px 12px 46px;border-bottom:1px solid var(--line)}
+  .tbl td{border:0;padding:2px 0}
+  .tbl td.blank{display:none}
+  .tbl td.cb{position:absolute;left:12px;top:12px;width:auto}
+  .tbl td[data-l]::before{content:attr(data-l) ": ";color:var(--muted);font-size:12px}
+  .tbl.plain tr{padding-left:12px}
+  .cell-tags{max-width:none}
+  .grid2,.grid3,.opt-grid{grid-template-columns:1fr}
+  .facts{grid-template-columns:1fr;gap:2px}
+  .facts dd{margin-bottom:8px}
+  .join-hero h1{font-size:28px}
+  .join-card{padding:20px 16px}
+  .bar-row{grid-template-columns:110px 1fr 30px}
+  .modal{padding:0;place-items:end stretch}
+  .modal-card{max-height:92vh;border-radius:16px 16px 0 0;width:100%}
+  .menu{right:10px;left:10px;top:52px}
+}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"><div class="center-card"><div class="spinner"></div></div></div>
+<div id="layer"></div>
+<div id="toast-host"></div>
+<div class="flyer" id="flyer"></div>
+<script>
+/*! qrcode-generator v1.4.4 | (c) 2009 Kazuhiko Arase | MIT License | https://github.com/kazuhikoarase/qrcode-generator */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,(function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1}))},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}((function(){return qrcode}));
+</script>
+<script>
+(function () {
+'use strict';
+/* =====================================================================
+   Piper Industry Partners: front end
+   Runs on GitHub Pages ("web" mode), inside Apps Script ("gas" mode),
+   or with fake data ("demo" mode, add ?demo to the address).
+   ===================================================================== */
+var CFG = Object.assign({ API_URL: '', STAFF_URL: '', LOGO_URL: '' }, window.PIPER_CONFIG || {});
+var QS = new URLSearchParams(location.search);
+var IN_GAS = typeof google !== 'undefined' && !!(google.script && google.script.run);
+var MODE = (QS.has('demo') || CFG.DEMO) ? 'demo' : IN_GAS ? 'gas' : (CFG.API_URL ? 'web' : 'setup');
+var VERSION = '1.0.0';
+var CACHE_KEY = 'piper.partners.cache.v1';
+var $app = document.getElementById('app');
+var $layer = document.getElementById('layer');
+var $toast = document.getElementById('toast-host');
+
+/* ---------------------------------------------------------------- tiny html helpers (everything is escaped unless raw) */
+function Raw(s) { this.s = s; }
+function raw(s) { return new Raw(String(s)); }
+var ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ESC[c]; }); }
+function fmtv(v) {
+  if (v == null || v === false) return '';
+  if (v instanceof Raw) return v.s;
+  if (Array.isArray(v)) return v.map(fmtv).join('');
+  return esc(v);
+}
+function html(strings) {
+  var vals = Array.prototype.slice.call(arguments, 1), out = '';
+  for (var i = 0; i < strings.length; i++) { out += strings[i]; if (i < vals.length) out += fmtv(vals[i]); }
+  return new Raw(out);
+}
+function put(el, r) { el.innerHTML = r instanceof Raw ? r.s : esc(r); }
+
+/* ---------------------------------------------------------------- small utilities */
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function digits(s) { return String(s || '').replace(/\D/g, ''); }
+function uniq(a) { var seen = {}; return a.filter(function (x) { if (!x || seen[x]) return false; seen[x] = 1; return true; }); }
+function pad2(n) { return ('0' + n).slice(-2); }
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function parseIso(d) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ''); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; }
+function fmtDate(d) { var p = parseIso(d); return p ? MONTHS[p.m - 1] + ' ' + p.d + ', ' + p.y : (d || ''); }
+function fmtMonth(d) { var p = parseIso(d); return p ? MONTHS[p.m - 1] + ' ' + p.y : ''; }
+function todayIso() { var t = new Date(); return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()); }
+function monthsSince(d) { var p = parseIso(d); if (!p) return Infinity; var t = new Date(); return (t.getFullYear() - p.y) * 12 + (t.getMonth() + 1 - p.m); }
+function schoolYear(d) { var p = parseIso(d); if (!p) return ''; var y = p.m >= 7 ? p.y : p.y - 1; return y + '–' + String(y + 1).slice(2); }
+function ago(d) {
+  var m = monthsSince(d); if (m === Infinity) return '';
+  if (m <= 0) return 'this month'; if (m < 12) return m + ' mo ago';
+  var y = Math.floor(m / 12); return y + ' yr' + (y > 1 ? 's' : '') + ' ago';
+}
+function fullName(c) { return [c.title, c.first, c.last].filter(Boolean).join(' '); }
+function displayName(c) { return fullName(c) || c.email || c.company || c.id; }
+function initials(c) {
+  var i = ((c.first || '')[0] || '') + ((c.last || '')[0] || '');
+  return (i || (c.email || c.company || '?')[0] || '?').toUpperCase();
+}
+function safeUrl(u) {
+  u = String(u || '').trim(); if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(u)) return 'https://' + u;
+  return '';
+}
+function debounce(fn, ms) { var t; return function () { var a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(null, a); }, ms); }; }
+var store = {
+  get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+  set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+
+var ICONS = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+  download: '<path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  filter: '<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  ext: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  merge: '<path d="M6 3v6a6 6 0 0 0 6 6h6M15 12l3 3-3 3M6 21v-6"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
+  alert: '<path d="M12 3 2 20h20zM12 9v5M12 17h.01"/>',
+  print: '<path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z"/>',
+  users: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 9M22 21a7 7 0 0 0-4-6.3"/>',
+  out: '<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l-5-5 5-5M5 12h11"/>',
+  star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>'
+};
+function I(name) { return raw('<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[name] + '</svg>'); }
+function mark(big) {
+  return CFG.LOGO_URL ? html`<span class="mark"><img src="${CFG.LOGO_URL}" alt=""></span>` : html`<span class="mark" aria-hidden="true">P</span>`;
+}
+
+/* ---------------------------------------------------------------- toast & clipboard & downloads */
+var toastTimer;
+function toast(msg, opts) {
+  opts = opts || {};
+  clearTimeout(toastTimer);
+  put($toast, html`<div class="toast ${opts.err ? 'err' : ''}" role="status">${opts.err ? I('alert') : I('check')}<span>${msg}</span></div>`);
+  toastTimer = setTimeout(function () { put($toast, ''); }, opts.err ? 7000 : 3500);
+}
+function copyText(text, label) {
+  var done = function () { toast(label || 'Copied'); };
+  var fallback = function () {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    if (ok) done(); else openModal({ type: 'copy', text: text, title: label || 'Copy this' });
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
+}
+function downloadFile(name, text, type) {
+  try {
+    var blob = new Blob([text], { type: type || 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  } catch (e) { openModal({ type: 'copy', text: text, title: 'Copy this CSV' }); }
+}
+function toCsv(rows) {
+  return rows.map(function (r) {
+    return r.map(function (v) {
+      v = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v);
+      if (/^[=+\-@]/.test(v)) v = "'" + v;
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }).join(',');
+  }).join('\r\n');
+}
+
+/* ---------------------------------------------------------------- auth (GitHub mode only) */
+var Auth = {
+  key: 'piper.partners.token',
+  mem: '',
+  token: function () { var t = ''; try { t = localStorage.getItem(this.key) || ''; } catch (e) {} return t || this.mem; },
+  set: function (t) { this.mem = t; try { localStorage.setItem(this.key, t); } catch (e) {} },
+  clear: function () { this.mem = ''; store.del(this.key); store.del(CACHE_KEY); },
+  who: function () {
+    try { var b = this.token().split('.')[0].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(atob(b + '==='.slice((b.length + 3) % 4))).e || ''; }
+    catch (e) { return ''; }
+  },
+  capture: function () {
+    var m = /[#&]token=([^&]+)/.exec(location.hash);
+    if (m) { this.set(decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname + location.search + '#directory'); }
+  },
+  signInUrl: function () {
+    return CFG.STAFF_URL + (CFG.STAFF_URL.indexOf('?') >= 0 ? '&' : '?') + 'action=login&return=' + encodeURIComponent(location.origin + location.pathname);
+  }
+};
+
+/* ---------------------------------------------------------------- backend (one interface, three transports) */
+var Backend = {
+  call: function (action, payload) {
+    payload = payload || {};
+    var p;
+    if (MODE === 'demo') p = Demo.call(action, payload);
+    else if (MODE === 'gas') {
+      p = new Promise(function (ok, fail) {
+        google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { fail(e instanceof Error ? e : new Error(String(e))); })
+          .api({ action: action, payload: payload });
+      });
+    } else {
+      p = fetch(CFG.API_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, payload: payload, token: Auth.token() })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('The server answered with an error (' + r.status + ').');
+        return r.json();
+      }, function () { throw new Error('Could not reach the server. Check your connection and try again.'); });
+    }
+    return p.then(function (res) {
+      if (!res || !res.ok) {
+        var e = new Error((res && res.error) || 'Unknown error'); e.code = res && res.code; e.data = res && res.data; throw e;
+      }
+      return res.data;
+    });
+  }
+};
+
+
+/* ---------------------------------------------------------------- demo mode: fictional data, nothing saved */
+var Demo = (function () {
+  var db = null;
+  var ROLES = [
+    ['Individual Interview', 'Meet one-on-one with a student (in person or by video) so they can interview you about your career path.'],
+    ['Capstone Evaluator', 'Score senior capstone presentations with a provided rubric, usually one evening or school day.'],
+    ['Round Table Interview', 'Sit on a small panel of professionals answering questions from a group of students.'],
+    ['Client', 'Be the "client" for a student project: share a real need and give feedback on their work.'],
+    ['Mock Interview', 'Give students practice job interviews and feedback on how they did.'],
+    ['Subject Matter Expert', 'Answer questions and advise students researching a topic in your field.'],
+    ['Internship Supervisor', 'Host a student intern at your workplace and supervise their work.'],
+    ['Advisory Board', 'Help guide an academy by meeting with staff a few times per year.']
+  ];
+  var ACADS = [
+    ['Design, Production & Aviation', 'Engineering, architecture, construction, trades, manufacturing, aviation'],
+    ['Business, Entrepreneurship & Innovation', 'Business, finance, marketing, sales, IT, entrepreneurship'],
+    ['Arts & Media', 'Visual & performing arts, design, photography, video, journalism, music'],
+    ['Human Services', 'Education, hospitality & culinary, cosmetology, social & family services'],
+    ['Health & Life Sciences', 'Medicine, nursing, therapy, lab science, veterinary, agriculture & environment'],
+    ['Public Services', 'Fire, EMS, law enforcement, law, government, military']
+  ];
+  var JOBS = [
+    ['Aerospace Engineer', 'Prairie Sky Aerospace', 0], ['Flight Instructor', 'Bluestem Flight School', 0], ['Architect', 'Oak & Iron Architects', 0],
+    ['Electrician', 'Brightline Electric', 0], ['Civil Engineer', 'Kaw Valley Engineering', 0], ['Construction Manager', 'Midland Builders', 0],
+    ['Financial Advisor', 'Heartland Wealth Group', 1], ['Marketing Director', 'Signal Hill Marketing', 1], ['Software Developer', 'Northwind Software', 1],
+    ['Small Business Owner', 'Cornerstone Coffee', 1], ['Banker', 'Prairie Community Bank', 1], ['HR Manager', 'Riverside Logistics', 1],
+    ['Graphic Designer', 'Lumen Design Studio', 2], ['Photographer', 'Golden Hour Photo', 2], ['Video Producer', 'Blue Door Media', 2], ['Musician', 'Freelance', 2],
+    ['Chef', 'Harvest Table Catering', 3], ['Early Childhood Teacher', 'Bright Path Learning Center', 3], ['Cosmetologist', 'Shear Talent Salon', 3], ['Social Worker', 'Family Bridges', 3],
+    ['Registered Nurse', 'Sunflower Health Partners', 4], ['Physical Therapist', 'Motion Physical Therapy', 4], ['Veterinarian', 'Cedar Ridge Animal Clinic', 4],
+    ['Lab Scientist', 'Clearwater Labs', 4], ['Pharmacist', 'Main Street Pharmacy', 4],
+    ['Firefighter / EMT', 'Riverbend Fire District', 5], ['Police Officer', 'Northfield Police Dept.', 5], ['Attorney', 'Summit Legal Group', 5], ['City Planner', 'City of Lakeview', 5]
+  ];
+  var FIRST = ['Avery', 'Jordan', 'Morgan', 'Riley', 'Casey', 'Taylor', 'Jamie', 'Quinn', 'Rowan', 'Harper', 'Elena', 'Marcus', 'Priya', 'Diego',
+    'Hannah', 'Malik', 'Grace', 'Owen', 'Sofia', 'Andre', 'Nina', 'Caleb', 'Leah', 'Mateo', 'Zoe', 'Isaac', 'Maya', 'Gabriel', 'Ruth', 'Samir'];
+  var LAST = ['Alvarez', 'Brooks', 'Chen', 'Delgado', 'Ellis', 'Foster', 'Garcia', 'Hughes', 'Ibarra', 'Jensen', 'Kim', 'Lopez', 'Morrison',
+    'Nguyen', 'Okafor', 'Patel', 'Quintero', 'Reyes', 'Sullivan', 'Thompson', 'Underwood', 'Vasquez', 'Whitaker', 'Young', 'Zimmerman'];
+  var STAFF = ['Alex Morgan', 'Dana Whitfield', 'Chris Patel', 'Sam Ortiz', 'Jordan Reyes'];
+  var RELS = ['Industry Partner', 'Alumni', 'Parent', 'Community Member', 'Board Member', 'Piper Education Foundation', 'Piper Staff', 'Other'];
+  var ME = { email: 'demo.admin@piperschools.us', isAdmin: true, name: 'Demo Admin' };
+
+  function make() {
+    var seed = 20261115;
+    var r = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    var pick = function (a) { return a[Math.floor(r() * a.length)]; };
+    var dateBack = function (maxMonths) {
+      var d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - Math.floor(r() * maxMonths));
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(1 + Math.floor(r() * 27));
+    };
+    var used = {}, contacts = [];
+    for (var i = 0; contacts.length < 64; i++) {
+      var f = pick(FIRST), l = pick(LAST);
+      if (used[f + l]) continue; used[f + l] = 1;
+      var job = pick(JOBS), n = contacts.length + 1;
+      var roles = ROLES.map(function (x) { return x[0]; }).filter(function (x, idx) { return r() < [0.45, 0.35, 0.2, 0.15, 0.12, 0.08, 0.07, 0.05][idx]; });
+      contacts.push({
+        id: 'P' + ('000' + n).slice(-4), status: r() < 0.06 ? 'Inactive' : 'Active', title: r() < 0.08 ? 'Dr.' : '',
+        first: f, last: l, profession: job[0], company: job[1], email: (f + '.' + l).toLowerCase() + '@example.com',
+        phone: r() < 0.8 ? '913-555-01' + pad2(n % 100) : '', location: pick(['Kansas City, KS', 'Overland Park, KS', 'Lawrence, KS', 'Kansas City, MO', 'Olathe, KS']),
+        linkedin: '', academies: [ACADS[job[2]][0]].concat(r() < 0.12 ? [ACADS[(job[2] + 1) % 6][0]] : []), roles: roles,
+        availability: pick(['', 'In person', 'Virtual', 'Either']), relationship: r() < 0.55 ? pick(RELS.slice(0, 6)) : '',
+        staff: r() < 0.6 ? [pick(STAFF)] : [], lastContact: r() < 0.7 ? dateBack(40) : '', raptor: r() < 0.2 ? dateBack(12) : '',
+        notes: r() < 0.15 ? pick(['Prefers email over phone.', 'Great with nervous students.', 'Available after 3:30 only.', 'Volunteered at career fair.']) : '',
+        source: 'Demo data', created: '2025-08-0' + (1 + (n % 8)) + ' 09:00:00', createdBy: 'demo', updated: '2025-08-0' + (1 + (n % 8)) + ' 09:00:00', updatedBy: 'demo'
+      });
+    }
+    // a deliberate duplicate so "Data health" has something to show
+    var twin = clone(contacts[3]); twin.id = 'P0065'; twin.last = twin.last + '-Hart'; twin.roles = ['Mock Interview']; twin.phone = ''; contacts.push(twin);
+    var engagements = [];
+    for (var e = 1; e <= 70; e++) {
+      var c = pick(contacts), d = dateBack(30), act = c.roles.length ? pick(c.roles) : pick(ROLES)[0];
+      engagements.push({ id: 'E' + ('000' + e).slice(-4), contactId: c.id, contactName: displayName(c), date: d, activity: act,
+        academy: c.academies[0] || '', staff: pick(STAFF), notes: r() < 0.2 ? 'Students loved it.' : '', loggedBy: 'demo', loggedAt: d + ' 15:00:00' });
+      if (!c.lastContact || c.lastContact < d) c.lastContact = d;
+    }
+    var partnerships = [
+      ['Prairie Sky Aerospace', 'Internship'], ['Sunflower Health Partners', 'CCP'], ['Riverbend Fire District', 'CCP'], ['Lumen Design Studio', 'Internship'],
+      ['Heartland Wealth Group', 'CCP'], ['Cedar Ridge Animal Clinic', 'Internship'], ['Harvest Table Catering', 'EE'], ['Summit Legal Group', 'CCP']
+    ].map(function (x, i) {
+      var c = contacts.filter(function (k) { return k.company === x[0]; })[0];
+      return { id: 'X000' + (i + 1), company: x[0], type: x[1], contactId: c ? c.id : '', partnerName: c ? fullName(c) : '', email: c ? c.email : '',
+        phone: '', academy: c ? c.academies[0] : '', status: i === 6 ? 'Past' : 'Active', schoolYear: '2025–26', notes: '', updated: '', updatedBy: '' };
+    });
+    var subs = [
+      { first: 'Lena', last: 'Marsh', profession: 'Avionics Technician', company: 'Prairie Sky Aerospace', email: 'lena.marsh@example.com', roles: ['Individual Interview', 'Internship Supervisor'], academies: ['Design, Production & Aviation'], message: 'Happy to host a student for a summer internship.' },
+      { first: contacts[10].first, last: contacts[10].last, profession: 'Senior ' + contacts[10].profession, company: contacts[10].company, email: contacts[10].email, roles: ['Capstone Evaluator'], academies: contacts[10].academies, message: 'I got a promotion! Updated my info.' },
+      { first: 'Theo', last: 'Banks', profession: 'Brewery Owner', company: 'Two Rivers Brewing', email: 'theo@example.com', roles: ['Client', 'Mock Interview'], academies: ['Business, Entrepreneurship & Innovation'], message: '' }
+    ].map(function (s, i) {
+      return Object.assign({ id: 'S000' + (i + 1), submittedAt: todayIso() + ' 0' + (8 + i) + ':15:00', status: 'Pending', title: '', phone: '913-555-0199', location: 'Kansas City, KS',
+        linkedin: '', availability: 'Either', relationship: 'Industry Partner', staffKnown: i === 0 ? 'Mr. Morgan' : '', reviewedBy: '', reviewedAt: '', contactId: '' }, s);
+    });
+    return {
+      settings: {
+        roles: ROLES.map(function (x) { return { name: x[0], description: x[1], showOnForm: true }; }),
+        academies: ACADS.map(function (x) { return { name: x[0], description: x[1] }; }),
+        relationships: RELS.slice(), staff: STAFF.slice(), admins: [ME.email],
+        availability: ['In person', 'Virtual', 'Either'], statuses: ['Active', 'Inactive', 'Do Not Contact'], partnershipTypes: ['CCP', 'Internship', 'EE', 'Other'],
+        config: { STAFF_DOMAIN: 'piperschools.us', ALLOWED_APP_URLS: '', PUBLIC_FORM_URL: '', STAFF_APP_URL: '', NOTIFY_EMAILS: ME.email,
+          SCHOOL_NAME: 'Piper High School', FORM_TITLE: 'Partner with Piper',
+          FORM_INTRO: 'Piper High School students learn best from people doing the work. Tell us a little about yourself and the ways you would be open to helping. A Piper staff member will reach out. There is never an obligation to say yes.',
+          STALE_MONTHS: '12', IGNORED_DUPES: '' }
+      },
+      contacts: contacts, engagements: engagements, partnerships: partnerships, submissions: subs
+    };
+  }
+  function now() { var t = new Date(); return todayIso() + ' ' + pad2(t.getHours()) + ':' + pad2(t.getMinutes()) + ':' + pad2(t.getSeconds()); }
+  function nextId(list, prefix) { var m = 0; list.forEach(function (x) { var n = parseInt(String(x.id).replace(/\D/g, ''), 10); if (n > m) m = n; }); return prefix + ('000' + (m + 1)).slice(-4); }
+  function find(list, id) { var x = list.filter(function (r) { return r.id === id; })[0]; if (!x) { var e = new Error('Record not found'); e.code = 'NOT_FOUND'; throw e; } return x; }
+  function fail(code, msg) { var e = new Error(msg); e.code = code; throw e; }
+  var EDIT = ['status', 'title', 'first', 'last', 'profession', 'company', 'email', 'phone', 'location', 'linkedin', 'academies', 'roles', 'availability', 'relationship', 'staff', 'lastContact', 'raptor', 'notes'];
+
+  var A = {
+    publicConfig: function () {
+      return { schoolName: db.settings.config.SCHOOL_NAME, formTitle: db.settings.config.FORM_TITLE, formIntro: db.settings.config.FORM_INTRO,
+        roles: db.settings.roles.filter(function (r) { return r.showOnForm; }), academies: db.settings.academies,
+        relationships: db.settings.relationships.filter(function (r) { return r !== 'Piper Staff'; }), availability: db.settings.availability };
+    },
+    submitPartner: function (p) {
+      if (!p.first || !p.last) fail('INVALID', 'Please enter your first and last name.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email || '')) fail('INVALID', 'Please enter a valid email address.');
+      if (!p.consent) fail('INVALID', 'Please check the box saying Piper staff may contact you.');
+      var s = Object.assign({}, p, { id: nextId(db.submissions, 'S'), status: 'Pending', submittedAt: now(), reviewedBy: '', reviewedAt: '', contactId: '' });
+      delete s.consent; delete s.website; delete s.elapsedMs;
+      db.submissions.push(s);
+      return { received: true };
+    },
+    bootstrap: function () {
+      return { me: ME, settings: db.settings, contacts: db.contacts, engagements: db.engagements, partnerships: db.partnerships,
+        submissions: db.submissions, pendingCount: db.submissions.filter(function (s) { return s.status === 'Pending'; }).length, serverTime: now() };
+    },
+    saveContact: function (p) {
+      var c = p.contact, rec;
+      if (!c.id) {
+        rec = { id: nextId(db.contacts, 'P'), source: 'Staff entry', created: now(), createdBy: ME.email, roles: [], academies: [], staff: [] };
+        EDIT.forEach(function (k) { rec[k] = c[k] != null ? c[k] : (rec[k] || ''); });
+        rec.status = rec.status || 'Active';
+        db.contacts.push(rec);
+      } else {
+        rec = find(db.contacts, c.id);
+        if (p.expectedUpdated && rec.updated !== p.expectedUpdated) fail('CONFLICT', 'Someone else changed this contact.');
+        EDIT.forEach(function (k) { if (c[k] !== undefined) rec[k] = c[k]; });
+      }
+      rec.email = String(rec.email || '').toLowerCase();
+      rec.updated = now(); rec.updatedBy = ME.email;
+      return { contact: rec };
+    },
+    deleteContact: function (p) {
+      var rec = find(db.contacts, p.id);
+      var gone = db.engagements.filter(function (e) { return e.contactId === rec.id; });
+      db.engagements = db.engagements.filter(function (e) { return e.contactId !== rec.id; });
+      db.partnerships.forEach(function (x) { if (x.contactId === rec.id) x.contactId = ''; });
+      db.contacts = db.contacts.filter(function (c) { return c.id !== rec.id; });
+      return { id: rec.id, engagementIds: gone.map(function (g) { return g.id; }) };
+    },
+    bulkUpdateContacts: function (p) {
+      var ch = p.changes || {}, out = [];
+      p.ids.forEach(function (id) {
+        var c = find(db.contacts, id), before = JSON.stringify(c);
+        c.roles = uniq(c.roles.concat(ch.addRoles || [])).filter(function (x) { return (ch.removeRoles || []).indexOf(x) < 0; });
+        c.academies = uniq(c.academies.concat(ch.addAcademies || [])).filter(function (x) { return (ch.removeAcademies || []).indexOf(x) < 0; });
+        c.staff = uniq(c.staff.concat(ch.addStaff || []));
+        if (ch.status) c.status = ch.status;
+        if (ch.relationship) c.relationship = ch.relationship;
+        if (JSON.stringify(c) !== before) { c.updated = now(); c.updatedBy = ME.email; out.push(c); }
+      });
+      return { contacts: out };
+    },
+    mergeContacts: function (p) {
+      var keep = find(db.contacts, p.keepId), drop = find(db.contacts, p.removeId);
+      EDIT.forEach(function (k) {
+        if (Array.isArray(keep[k])) keep[k] = uniq(keep[k].concat(drop[k] || []));
+        else if (k === 'notes') keep[k] = [keep[k], drop[k]].filter(Boolean).join(' | ');
+        else if (k === 'lastContact' || k === 'raptor') keep[k] = [keep[k], drop[k]].sort().pop() || '';
+        else if (!keep[k] && drop[k]) keep[k] = drop[k];
+      });
+      ['engagements', 'partnerships', 'submissions'].forEach(function (t) { db[t].forEach(function (r) { if (r.contactId === drop.id) r.contactId = keep.id; }); });
+      db.contacts = db.contacts.filter(function (c) { return c.id !== drop.id; });
+      keep.updated = now(); keep.updatedBy = ME.email;
+      return { contact: keep, removedId: drop.id };
+    },
+    logEngagements: function (p) {
+      var recs = [], touched = {};
+      p.entries.forEach(function (en) {
+        var c = find(db.contacts, en.contactId);
+        var rec = { id: nextId(db.engagements, 'E'), contactId: c.id, contactName: displayName(c), date: en.date || todayIso(), activity: en.activity,
+          academy: en.academy || '', staff: en.staff || '', notes: en.notes || '', loggedBy: ME.email, loggedAt: now() };
+        db.engagements.push(rec); recs.push(rec);
+        if (!c.lastContact || c.lastContact < rec.date) c.lastContact = rec.date;
+        if (db.settings.roles.some(function (r) { return r.name === rec.activity; }) && c.roles.indexOf(rec.activity) < 0) c.roles.push(rec.activity);
+        if (rec.academy && c.academies.indexOf(rec.academy) < 0) c.academies.push(rec.academy);
+        touched[c.id] = c;
+      });
+      return { engagements: recs, contacts: Object.keys(touched).map(function (k) { return touched[k]; }) };
+    },
+    deleteEngagement: function (p) { find(db.engagements, p.id); db.engagements = db.engagements.filter(function (e) { return e.id !== p.id; }); return { id: p.id }; },
+    savePartnership: function (p) {
+      var x = p.partnership, rec = x.id ? find(db.partnerships, x.id) : { id: nextId(db.partnerships, 'X') };
+      if (!x.company) fail('INVALID', 'Company is required.');
+      Object.assign(rec, x, { id: rec.id, updated: now(), updatedBy: ME.email });
+      rec.status = rec.status || 'Active';
+      if (!x.id) db.partnerships.push(rec);
+      return { partnership: rec };
+    },
+    deletePartnership: function (p) { db.partnerships = db.partnerships.filter(function (x) { return x.id !== p.id; }); return { id: p.id }; },
+    reviewSubmission: function (p) {
+      var s = find(db.submissions, p.id), c = null;
+      if (s.status !== 'Pending') fail('CONFLICT', 'Already reviewed.');
+      if (p.decision === 'approve') {
+        c = A.saveContact({ contact: Object.assign({}, p.contact, { id: '' }) }).contact;
+        c.source = 'Partner form';
+        s.status = 'Approved';
+      } else if (p.decision === 'merge') {
+        c = find(db.contacts, p.contactId);
+        ['title', 'first', 'last', 'profession', 'company', 'email', 'phone', 'location', 'linkedin', 'availability', 'relationship'].forEach(function (k) { if (!c[k] && s[k]) c[k] = s[k]; });
+        if (p.preferNew) ['profession', 'company', 'phone', 'location', 'linkedin', 'availability'].forEach(function (k) { if (s[k]) c[k] = s[k]; });
+        c.roles = uniq(c.roles.concat(s.roles)); c.academies = uniq(c.academies.concat(s.academies));
+        c.notes = [c.notes, 'Partner form ' + s.submittedAt.slice(0, 10) + (s.message ? ': ' + s.message : '')].filter(Boolean).join(' | ');
+        c.updated = now(); s.status = 'Merged';
+      } else s.status = 'Rejected';
+      s.reviewedBy = ME.email; s.reviewedAt = now(); s.contactId = c ? c.id : '';
+      return { submission: s, contact: c };
+    },
+    saveSettings: function (p) {
+      var ren = p.renames || {};
+      db.contacts.forEach(function (c) {
+        c.roles = uniq(c.roles.map(function (x) { return (ren.roles || {})[x] || x; }));
+        c.academies = uniq(c.academies.map(function (x) { return (ren.academies || {})[x] || x; }));
+      });
+      Object.assign(db.settings, { roles: p.roles, academies: p.academies, relationships: p.relationships, staff: p.staff, admins: p.admins });
+      Object.assign(db.settings.config, p.config || {});
+      return { settings: db.settings };
+    },
+    signOutEveryone: function () { return { done: true }; }
+  };
+  return {
+    call: function (action, payload) {
+      if (!db) db = make();
+      return new Promise(function (ok) { setTimeout(ok, 120); }).then(function () {
+        if (!A[action]) fail('BAD_REQUEST', 'Unknown action ' + action);
+        try { return { ok: true, data: clone(A[action](clone(payload))) }; }
+        catch (e) { return { ok: false, code: e.code || 'SERVER', error: e.message }; }
+      });
+    }
+  };
+})();
+
+
+/* ---------------------------------------------------------------- state */
+function defaultFilters() { return { q: '', roles: [], academies: [], relationship: '', staff: '', last: '', status: 'Active', missing: '', sort: 'last' }; }
+var S = {
+  d: null, view: 'directory', f: defaultFilters(), limit: 150, sel: new Set(), drawer: null, modal: null,
+  menu: false, filtersOpen: false, refreshing: false, loadedAt: 0, viewAs: '',
+  act: { year: '', activity: '', academy: '', staff: '', q: '' },
+  px: { type: '', status: 'Active', q: '' },
+  pendTab: 'pending'
+};
+var IX = { byId: new Map(), eng: new Map(), px: new Map() };
+var VIEWS = ['directory', 'activity', 'partnerships', 'pending', 'health', 'settings', 'share'];
+
+function isAdmin() { return !!(S.d && S.d.me && S.d.me.isAdmin) && S.viewAs !== 'staff'; }
+function L() { return S.d.settings; }
+function staleMonths() { return parseInt(L().config.STALE_MONTHS, 10) || 12; }
+
+function reindex() {
+  var d = S.d;
+  IX.byId = new Map(); IX.eng = new Map(); IX.px = new Map();
+  d.contacts.forEach(function (c) {
+    c.roles = c.roles || []; c.academies = c.academies || []; c.staff = c.staff || []; c.status = c.status || 'Active';
+    c._hay = norm([fullName(c), c.company, c.profession, c.email, c.location, c.notes, c.relationship, c.staff.join(' '),
+      c.roles.join(' '), c.academies.join(' '), c.id, c.linkedin].join(' ')) + ' ' + digits(c.phone);
+    c._em = String(c.email || '').toLowerCase().split(/[\s,;]+/).filter(Boolean);
+    c._ph = digits(c.phone); c._nk = nameKey(c); c._last = norm(c.last); c._fi = norm(c.first)[0] || ''; c._co = norm(c.company).slice(0, 5);
+    IX.byId.set(c.id, c);
+  });
+  d.engagements.forEach(function (e) { if (!IX.eng.has(e.contactId)) IX.eng.set(e.contactId, []); IX.eng.get(e.contactId).push(e); });
+  IX.eng.forEach(function (l) { l.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }); });
+  d.partnerships.forEach(function (x) { if (!x.contactId) return; if (!IX.px.has(x.contactId)) IX.px.set(x.contactId, []); IX.px.get(x.contactId).push(x); });
+  if (d.me && d.me.isAdmin) d.pendingCount = d.submissions.filter(function (s) { return (s.status || 'Pending') === 'Pending'; }).length;
+  S.sel.forEach(function (id) { if (!IX.byId.has(id)) S.sel.delete(id); });
+}
+
+function upsert(list, rec) {
+  for (var i = 0; i < list.length; i++) if (list[i].id === rec.id) { list[i] = rec; return; }
+  list.push(rec);
+}
+
+/* academy colors & short names */
+var PALETTE = ['#2563a8', '#0f766e', '#c2410c', '#a21caf', '#15803d', '#b91c1c', '#7c3aed', '#a16207', '#0e7490', '#be185d'];
+function acadColor(name) { var i = L().academies.map(function (a) { return a.name; }).indexOf(name); return i < 0 ? '#8a8299' : PALETTE[i % PALETTE.length]; }
+function acadShort(name) {
+  return String(name).split(/[\s,]+/).filter(function (w) { return w && !/^(&|and|of|the)$/i.test(w); }).map(function (w) { return w[0].toUpperCase(); }).join('');
+}
+function acadBadge(name, full) { return html`<span class="acad ${full ? 'box' : ''}" title="${name}"><i style="background:${acadColor(name)}"></i>${full ? name : acadShort(name)}</span>`; }
+function statusPill(s) { return html`<span class="status ${String(s || 'Active').replace(/\s+/g, '-')}">${s || 'Active'}</span>`; }
+
+/* ---------------------------------------------------------------- filtering */
+function filterContacts() {
+  var f = S.f, toks = norm(f.q).split(/\s+/).filter(Boolean), stale = staleMonths();
+  var out = S.d.contacts.filter(function (c) {
+    if (f.status && f.status !== 'All' && c.status !== f.status) return false;
+    if (f.roles.length && !f.roles.some(function (r) { return c.roles.indexOf(r) >= 0; })) return false;
+    if (f.academies.length && !f.academies.some(function (a) { return c.academies.indexOf(a) >= 0; })) return false;
+    if (f.relationship && (c.relationship || '(none)') !== f.relationship) return false;
+    if (f.staff && c.staff.indexOf(f.staff) < 0) return false;
+    if (f.last === 'recent' && !(c.lastContact && monthsSince(c.lastContact) < stale)) return false;
+    if (f.last === 'stale' && !(c.lastContact && monthsSince(c.lastContact) >= stale)) return false;
+    if (f.last === 'never' && c.lastContact) return false;
+    if (f.missing === 'email' && c.email) return false;
+    if (f.missing === 'phone' && c.phone) return false;
+    if (f.missing === 'reach' && (c.email || c.phone)) return false;
+    if (f.missing === 'role' && c.roles.length) return false;
+    if (f.missing === 'academy' && c.academies.length) return false;
+    if (f.missing === 'name' && (c.first || c.last)) return false;
+    for (var i = 0; i < toks.length; i++) if (c._hay.indexOf(toks[i]) < 0) return false;
+    return true;
+  });
+  var by = {
+    last: function (a, b) { return (a.last ? 0 : 1) - (b.last ? 0 : 1) || norm(a.last || a.email).localeCompare(norm(b.last || b.email)) || norm(a.first).localeCompare(norm(b.first)); },
+    company: function (a, b) { return (a.company ? 0 : 1) - (b.company ? 0 : 1) || norm(a.company).localeCompare(norm(b.company)) || by.last(a, b); },
+    recent: function (a, b) { return String(b.lastContact || '').localeCompare(String(a.lastContact || '')) || by.last(a, b); },
+    oldest: function (a, b) { return String(a.lastContact || '').localeCompare(String(b.lastContact || '')) || by.last(a, b); },
+    added: function (a, b) { return String(b.created || '').localeCompare(String(a.created || '')) || by.last(a, b); }
+  };
+  return out.sort(by[f.sort] || by.last);
+}
+function activeFilterCount() {
+  var f = S.f;
+  return f.roles.length + f.academies.length + (f.relationship ? 1 : 0) + (f.staff ? 1 : 0) + (f.last ? 1 : 0) + (f.status !== 'Active' ? 1 : 0) + (f.missing ? 1 : 0);
+}
+
+/* ---------------------------------------------------------------- duplicates */
+function nameKey(c) { return norm((c.first || '') + ' ' + (c.last || '')).replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
+function findMatches(c, excludeId) {
+  var em = String(c.email || '').trim().toLowerCase(), ph = digits(c.phone).slice(-10), nk = nameKey(c);
+  var last = norm(c.last), fi = norm(c.first)[0], co = norm(c.company).slice(0, 5);
+  var out = [];
+  S.d.contacts.forEach(function (o) {
+    if (o.id === excludeId) return;
+    var why = [];
+    if (em && o._em.indexOf(em) >= 0) why.push('same email');
+    if (ph.length >= 10 && o._ph.indexOf(ph) >= 0) why.push('same phone');
+    if (nk && nk.indexOf(' ') > 0 && o._nk === nk) why.push('same name');
+    else if (last && fi && co && o._last === last && o._fi === fi && o._co === co) why.push('similar name, same company');
+    if (why.length) out.push({ c: o, why: why.join(', ') });
+  });
+  return out;
+}
+function duplicatePairs() {
+  var ignored = String(L().config.IGNORED_DUPES || '').split(/[\s,;]+/).filter(Boolean);
+  var seen = {}, pairs = [];
+  S.d.contacts.forEach(function (c) {
+    findMatches(c, c.id).forEach(function (m) {
+      var key = [c.id, m.c.id].sort().join('+');
+      if (seen[key] || ignored.indexOf(key) >= 0) return;
+      seen[key] = 1; pairs.push({ a: c, b: m.c, why: m.why, key: key });
+    });
+  });
+  return pairs;
+}
+
+
+/* ================================================================ shell */
+function topbar() {
+  var me = S.d.me, admin = isAdmin();
+  var nav = [['directory', 'Directory'], ['activity', 'Activity'], ['partnerships', 'Partnerships']];
+  if (admin) nav.push(['pending', 'Pending'], ['health', 'Data health'], ['settings', 'Settings']);
+  nav.push(['share', 'Partner form']);
+  return html`
+  <header class="topbar"><div class="topbar-in">
+    <a class="brand" href="#directory">${mark()}<div><b>Industry Partners</b><span>${L().config.SCHOOL_NAME || 'Piper High School'} Academies</span></div></a>
+    <nav class="nav" aria-label="Main">${nav.map(function (n) {
+      return html`<a href="#${n[0]}" ${S.view === n[0] ? raw('aria-current="page"') : ''}>${n[1]}${n[0] === 'pending' && S.d.pendingCount ? html`<span class="badge-n">${S.d.pendingCount}</span>` : ''}</a>`;
+    })}</nav>
+    <div class="me"><button class="me-btn" data-act="menu" aria-haspopup="true" aria-expanded="${S.menu}">
+      <span class="avatar">${initials({ first: me.name.split(' ')[0], last: me.name.split(' ').slice(-1)[0] })}</span>
+      <span class="role-tag">${admin ? 'Admin' : 'Staff'}</span></button></div>
+  </div>
+  ${S.menu ? html`<div class="menu" role="menu">
+    <div class="who"><b>${me.name}</b><div class="small muted">${me.email}</div><div class="tiny muted">${admin ? 'Admin: can add & edit' : 'Staff: view only'}</div></div>
+    <button data-act="refresh" role="menuitem">${I('refresh')} Refresh data</button>
+    ${MODE === 'demo' ? html`<button data-act="view-as" role="menuitem">${I('users')} Preview as ${S.viewAs ? 'admin' : 'view-only staff'}</button>` : ''}
+    ${MODE === 'web' ? html`<button data-act="signout" role="menuitem">${I('out')} Sign out</button>` : ''}
+    <div class="tiny muted" style="padding:8px 12px">${{ web: 'GitHub version', gas: 'Google-hosted version', demo: 'Demo' }[MODE]} · v${VERSION}</div>
+  </div>` : ''}
+  </header>`;
+}
+function banner() {
+  if (MODE === 'demo') return html`<div class="banner"><b>Demo mode.</b> Sample people, nothing is saved.${CFG.DEMO ? '' : html` <button data-act="exit-demo">Exit demo</button>`}</div>`;
+  return '';
+}
+function render() {
+  if (!S.d) return;
+  var ae = document.activeElement, focusId = ae && ae.id && $app.contains(ae) ? ae.id : null;
+  var selStart = focusId && ae.selectionStart != null ? ae.selectionStart : null;
+  var y = window.scrollY;
+  put($app, html`${banner()}${topbar()}<main id="main">${body()}</main>${S.refreshing ? html`<div class="refreshing">Refreshing…</div>` : ''}`);
+  if (focusId) {
+    var el = document.getElementById(focusId);
+    if (el) { el.focus(); if (selStart != null) try { el.setSelectionRange(selStart, selStart); } catch (e) {} }
+  }
+  window.scrollTo(0, y);
+}
+function body() {
+  switch (S.view) {
+    case 'activity': return viewActivity();
+    case 'partnerships': return viewPartnerships();
+    case 'pending': return isAdmin() ? viewPending() : viewDirectory();
+    case 'health': return isAdmin() ? viewHealth() : viewDirectory();
+    case 'settings': return isAdmin() ? viewSettings() : viewDirectory();
+    case 'share': return viewShare();
+    default: return viewDirectory();
+  }
+}
+function renderLayer() {
+  var open = !!((S.drawer && IX.byId.get(S.drawer)) || S.modal);
+  document.body.style.overflow = open ? 'hidden' : '';
+  put($layer, html`${S.drawer ? drawerHtml() : ''}${S.modal ? modalHtml() : ''}`);
+}
+
+/* ================================================================ directory */
+function selectHtml(id, key, opts, value, label) {
+  return html`<label class="sr" for="${id}">${label}</label><select id="${id}" class="input" data-in="${key}">${opts.map(function (o) {
+    var v = Array.isArray(o) ? o[0] : o, t = Array.isArray(o) ? o[1] : o;
+    return html`<option value="${v}" ${String(value) === String(v) ? raw('selected') : ''}>${t}</option>`;
+  })}</select>`;
+}
+function fchip(group, value, n, extra) {
+  var on = S.f[group].indexOf(value) >= 0;
+  return html`<button class="chip" aria-pressed="${on}" data-act="fchip" data-g="${group}" data-v="${value}">${extra || ''}${value}<span class="n">${n}</span></button>`;
+}
+function viewDirectory() {
+  var f = S.f, all = S.d.contacts, list = filterContacts(), shown = list.slice(0, S.limit), stale = staleMonths();
+  var base = all.filter(function (c) { return f.status === 'All' || c.status === f.status; });
+  var count = function (fn) { return base.filter(fn).length; };
+  var rels = uniq(L().relationships.concat(all.map(function (c) { return c.relationship; })));
+  var staff = uniq(L().staff.concat([].concat.apply([], all.map(function (c) { return c.staff; })))).sort();
+  var allSel = list.length > 0 && list.every(function (c) { return S.sel.has(c.id); });
+  var nAct = activeFilterCount();
+  var activePx = S.d.partnerships.filter(function (p) { return p.status !== 'Past'; }).length;
+  return html`
+  <div class="page-head"><div><h1>Industry Partners</h1>
+    <p>${plural(all.filter(function (c) { return c.status === 'Active'; }).length, 'active partner')} · ${plural(activePx, 'active internship/CCP partnership')}</p></div>
+    ${isAdmin() ? html`<div class="row"><button class="btn primary" data-act="add-contact">${I('plus')} Add partner</button></div>` : ''}
+  </div>
+  <div class="dir">
+    <aside class="filters card ${S.filtersOpen ? 'open' : ''}" aria-label="Filters">
+      <div class="group"><h3>Roles</h3><div class="chips">${L().roles.map(function (r) { return fchip('roles', r.name, count(function (c) { return c.roles.indexOf(r.name) >= 0; })); })}</div>
+        <p class="tiny muted" style="margin:8px 0 0">Shows people with <i>any</i> selected role.</p></div>
+      <div class="group"><h3>Academies</h3><div class="chips">${L().academies.map(function (a) {
+        return fchip('academies', a.name, count(function (c) { return c.academies.indexOf(a.name) >= 0; }), html`<i style="width:8px;height:8px;border-radius:50%;background:${acadColor(a.name)};display:inline-block"></i>`);
+      })}</div></div>
+      <div class="group"><h3>Last positive contact</h3>${selectHtml('f-last', 'f.last', [['', 'Any time'], ['recent', 'Within ' + stale + ' months'], ['stale', 'More than ' + stale + ' months ago'], ['never', 'Never recorded']], f.last, 'Last positive contact')}</div>
+      <div class="group"><h3>Connection to Piper</h3>
+        <div class="stack" style="gap:8px">${selectHtml('f-rel', 'f.relationship', [['', 'Any relationship']].concat(rels.map(function (r) { return [r, r]; })).concat([['(none)', '(not recorded)']]), f.relationship, 'Relationship')}
+        ${selectHtml('f-staff', 'f.staff', [['', 'Any Piper staff contact']].concat(staff.map(function (s) { return [s, s]; })), f.staff, 'Piper staff contact')}</div></div>
+      <div class="group"><h3>Status</h3>${selectHtml('f-status', 'f.status', [['Active', 'Active'], ['Inactive', 'Inactive'], ['Do Not Contact', 'Do not contact'], ['All', 'All statuses']], f.status, 'Status')}</div>
+      <div class="group"><h3>Missing info</h3>${selectHtml('f-missing', 'f.missing', [['', 'Show everyone'], ['email', 'No email'], ['phone', 'No phone'], ['reach', 'No email or phone'], ['role', 'No role yet'], ['academy', 'No academy yet'], ['name', 'No name']], f.missing, 'Missing info')}</div>
+      ${nAct ? html`<button class="btn sm" data-act="clear-filters">${I('x')} Clear filters</button>` : ''}
+    </aside>
+    <section>
+      <div class="toolbar">
+        <label class="search">${I('search')}<span class="sr">Search partners</span><input id="q" class="input" type="search" placeholder="Search name, company, job, email, notes…" value="${f.q}" data-in="f.q" autocomplete="off"></label>
+        <button class="btn filters-toggle" data-act="toggle-filters" aria-expanded="${S.filtersOpen}">${I('filter')} Filters${nAct ? ' (' + nAct + ')' : ''}</button>
+        <div style="width:190px">${selectHtml('f-sort', 'f.sort', [['last', 'Sort: Last name'], ['company', 'Sort: Company'], ['recent', 'Sort: Recent contact'], ['oldest', 'Sort: Longest since contact'], ['added', 'Sort: Newest added']], f.sort, 'Sort')}</div>
+      </div>
+      ${activeChips()}
+      ${S.sel.size ? bulkBar() : html`<div class="row" style="margin-bottom:10px"><span class="count">${plural(list.length, 'person', 'people')}</span><span class="grow"></span>
+        <button class="btn sm" data-act="copy-emails" title="Copy every email in this list, ready to paste into BCC">${I('mail')} Copy emails</button>
+        <button class="btn sm" data-act="export-contacts">${I('download')} Export</button></div>`}
+      <div class="card" style="overflow:hidden">
+      ${list.length ? html`<table class="tbl">
+        <thead><tr><th class="cb"><input type="checkbox" data-act="sel-all" aria-label="Select all ${list.length}" ${allSel ? raw('checked') : ''}></th>
+          <th>Name</th><th>Company</th><th>Roles</th><th>Academies</th><th>Last contact</th><th>Piper staff</th></tr></thead>
+        <tbody>${shown.map(function (c) { return rowContact(c, stale); })}</tbody></table>
+        ${list.length > shown.length ? html`<div class="more"><button class="btn" data-act="more">Show more</button> <span class="muted small">Showing ${shown.length} of ${list.length}</span></div>` : ''}`
+      : html`<div class="empty"><h3>No one matches</h3><p>Try a different search or <button class="btn sm" data-act="clear-filters">clear the filters</button></p></div>`}
+      </div>
+    </section>
+  </div>`;
+}
+function td(label, content, cls) { var empty = content == null || content === '' || (content instanceof Raw && !content.s.trim()) || (Array.isArray(content) && !content.length); return html`<td data-l="${label}" class="${(cls || '') + (empty ? ' blank' : '')}">${content}</td>`; }
+function rowContact(c, stale) {
+  var sel = S.sel.has(c.id), old = c.lastContact && monthsSince(c.lastContact) >= stale;
+  return html`<tr data-act="open" data-id="${c.id}" class="${sel ? 'sel' : ''}">
+    <td class="cb"><input type="checkbox" data-act="sel" data-id="${c.id}" ${sel ? raw('checked') : ''} aria-label="Select ${displayName(c)}"></td>
+    <td class="who-cell"><b>${fullName(c) || html`<i class="muted">Name unknown</i>`} ${c.status !== 'Active' ? statusPill(c.status) : ''}</b><span class="muted">${c.profession || c.email}</span></td>
+    ${td('Company', c.company)}
+    ${td('Roles', c.roles.length ? html`<div class="cell-tags">${c.roles.map(function (r) { return html`<span class="tag">${r}</span>`; })}</div>` : '')}
+    ${td('Academies', c.academies.length ? html`<div class="cell-tags">${c.academies.map(function (a) { return acadBadge(a); })}</div>` : '')}
+    ${td('Last contact', c.lastContact ? html`<span class="${old ? 'stale' : ''}" title="${old ? 'Over ' + stale + ' months ago' : ''}">${fmtMonth(c.lastContact)}</span>` : '', 'nowrap')}
+    ${td('Piper staff', c.staff.join(', '))}
+  </tr>`;
+}
+function activeChips() {
+  var f = S.f, out = [];
+  f.roles.forEach(function (v) { out.push(['roles', v, v]); });
+  f.academies.forEach(function (v) { out.push(['academies', v, v]); });
+  if (f.relationship) out.push(['relationship', '', f.relationship === '(none)' ? 'No relationship recorded' : f.relationship]);
+  if (f.staff) out.push(['staff', '', 'Staff: ' + f.staff]);
+  if (f.last) out.push(['last', '', { recent: 'Contacted recently', stale: 'Not contacted in ' + staleMonths() + '+ months', never: 'Never contacted' }[f.last]]);
+  if (f.status !== 'Active') out.push(['status', '', f.status === 'All' ? 'All statuses' : f.status]);
+  if (f.missing) out.push(['missing', '', 'Missing: ' + f.missing]);
+  if (!out.length) return '';
+  return html`<div class="active-filters">${out.map(function (o) { return html`<button class="chip" data-act="rm-filter" data-g="${o[0]}" data-v="${o[1]}" aria-label="Remove filter ${o[2]}">${o[2]} ${I('x')}</button>`; })}
+    <button class="btn sm ghost" data-act="clear-filters">Clear all</button></div>`;
+}
+function bulkBar() {
+  var n = S.sel.size;
+  return html`<div class="bulkbar" role="region" aria-label="Selection actions"><b>${n} selected</b><span class="grow"></span>
+    <button class="btn sm" data-act="copy-emails">${I('mail')} Copy emails</button>
+    <button class="btn sm" data-act="export-contacts">${I('download')} Export</button>
+    ${isAdmin() ? html`<button class="btn sm" data-act="log-selected">${I('cal')} Log participation</button><button class="btn sm" data-act="bulk-edit">${I('edit')} Edit ${n}</button>` : ''}
+    <button class="btn sm" data-act="clear-sel">${I('x')} Clear</button></div>`;
+}
+
+/* ================================================================ contact drawer */
+function drawerHtml() {
+  var c = IX.byId.get(S.drawer);
+  if (!c) return '';
+  var eng = IX.eng.get(c.id) || [], px = IX.px.get(c.id) || [], admin = isAdmin(), stale = staleMonths();
+  var tgt = MODE === 'gas' ? '_top' : '_self';
+  var li = safeUrl(c.linkedin);
+  var emails = String(c.email || '').split(/[\s,;]+/).filter(Boolean);
+  return html`<div class="scrim" data-act="close-drawer"></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title">
+    <div class="drawer-head"><span class="avatar">${initials(c)}</span>
+      <div class="grow"><h2 id="dr-title">${fullName(c) || 'Name unknown'}</h2>
+        <div class="muted">${[c.profession, c.company].filter(Boolean).join(' · ')}</div>
+        <div class="row" style="margin-top:6px">${statusPill(c.status)}<span class="tiny muted">${c.id}</span></div></div>
+      <button class="x" data-act="close-drawer" aria-label="Close">${I('x')}</button></div>
+    <div class="drawer-body">
+      <div class="quick">
+        ${emails[0] ? html`<a class="btn sm" href="mailto:${emails[0]}" target="${tgt}">${I('mail')} Email</a><button class="btn sm" data-act="copy" data-text="${emails[0]}">${I('copy')} Copy email</button>` : ''}
+        ${c.phone ? html`<a class="btn sm" href="tel:${digits(c.phone.split('/')[0])}" target="${tgt}">${I('phone')} Call</a>` : ''}
+        ${li ? html`<a class="btn sm" href="${li}" target="_blank" rel="noopener noreferrer">${I('ext')} LinkedIn</a>` : ''}
+      </div>
+      <section><h3 class="section-title">Can help with</h3>
+        ${c.roles.length ? html`<div class="chips">${c.roles.map(function (r) { return html`<span class="tag">${r}</span>`; })}</div>` : html`<p class="muted small">No roles yet.</p>`}
+        <div class="chips" style="margin-top:8px">${c.academies.map(function (a) { return acadBadge(a, true); })}</div></section>
+      <section><h3 class="section-title">Details</h3><dl class="facts">
+        ${fact('Email', emails.join(', '))}${fact('Phone', c.phone)}${fact('Location', c.location)}
+        ${fact('Relationship', c.relationship)}${fact('Piper staff contact', c.staff.join(', '))}${fact('Availability', c.availability)}
+        ${fact('Last positive contact', c.lastContact ? html`${fmtMonth(c.lastContact)} <span class="${monthsSince(c.lastContact) >= stale ? 'stale' : 'muted'} small">(${ago(c.lastContact)})</span>` : html`<span class="muted">Not recorded</span>`)}
+        ${fact('Raptor cleared', c.raptor ? fmtDate(c.raptor) : '')}
+        ${fact('Source', c.source)}${c.createdBy && c.createdBy !== 'migration' ? fact('Added', [c.created ? fmtDate(c.created) : '', 'by ' + c.createdBy].filter(Boolean).join(' ')) : ''}
+        ${c.updatedBy && c.updatedBy !== 'migration' ? fact('Last edited', c.updated ? fmtDate(c.updated) + ' by ' + c.updatedBy : '') : ''}
+      </dl></section>
+      ${c.notes ? html`<section><h3 class="section-title">Notes</h3><p class="notes">${c.notes}</p></section>` : ''}
+      <section><div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 class="section-title" style="margin:0">Participation (${eng.length})</h3>
+        ${admin ? html`<button class="btn sm" data-act="log-one" data-id="${c.id}">${I('plus')} Log participation</button>` : ''}</div>
+        ${eng.length ? html`<ul class="timeline">${eng.map(function (e) {
+          return html`<li><span class="date">${fmtDate(e.date)}</span><div class="grow"><b>${e.activity}</b>${e.academy ? html` · ${acadBadge(e.academy)}` : ''}
+            <div class="small muted">${[e.staff ? 'with ' + e.staff : '', e.notes].filter(Boolean).join(' · ')}</div></div>
+            ${admin ? html`<button class="x" data-act="del-eng" data-id="${e.id}" aria-label="Delete this record" title="Delete">${I('trash')}</button>` : ''}</li>`;
+        })}</ul>` : html`<p class="muted small">Nothing logged yet.${c.lastContact ? ' The old spreadsheet only kept the last contact date.' : ''}</p>`}
+      </section>
+      ${px.length ? html`<section><h3 class="section-title">Internship / CCP partnerships</h3><ul class="timeline">${px.map(function (x) {
+        return html`<li><span class="date">${x.type}</span><div class="grow"><b>${x.company}</b><div class="small muted">${[x.status, x.schoolYear].filter(Boolean).join(' · ')}</div></div></li>`;
+      })}</ul></section>` : ''}
+    </div>
+    ${admin ? html`<div class="drawer-foot"><button class="btn danger" data-act="delete-contact" data-id="${c.id}">${I('trash')} Delete</button>
+      <button class="btn primary" data-act="edit-contact" data-id="${c.id}">${I('edit')} Edit</button></div>` : ''}
+  </aside>`;
+}
+function fact(k, v) { return v ? html`<dt>${k}</dt><dd>${v}</dd>` : ''; }
+
+/* ================================================================ activity */
+function viewActivity() {
+  var a = S.act, toks = norm(a.q).split(/\s+/).filter(Boolean);
+  var all = S.d.engagements.slice().sort(function (x, y) { return String(y.date).localeCompare(String(x.date)); });
+  var years = uniq(all.map(function (e) { return schoolYear(e.date); })).sort().reverse();
+  var list = all.filter(function (e) {
+    if (a.year && schoolYear(e.date) !== a.year) return false;
+    if (a.activity && e.activity !== a.activity) return false;
+    if (a.academy && e.academy !== a.academy) return false;
+    if (a.staff && e.staff !== a.staff) return false;
+    var c = IX.byId.get(e.contactId), hay = norm([e.contactName, e.activity, e.notes, e.staff, c ? c.company : ''].join(' '));
+    return toks.every(function (t) { return hay.indexOf(t) >= 0; });
+  });
+  var people = uniq(list.map(function (e) { return e.contactId; })).length;
+  var byAct = {}; list.forEach(function (e) { byAct[e.activity] = (byAct[e.activity] || 0) + 1; });
+  var acts = Object.keys(byAct).sort(function (x, y) { return byAct[y] - byAct[x]; });
+  var max = acts.length ? byAct[acts[0]] : 1;
+  var actOpts = uniq(L().roles.map(function (r) { return r.name; }).concat(all.map(function (e) { return e.activity; })));
+  var staffOpts = uniq(all.map(function (e) { return e.staff; })).sort();
+  return html`
+  <div class="page-head"><div><h1>Participation</h1><p>Every time a partner helps students. Logging here also updates their "last positive contact".</p></div>
+    <div class="row">${isAdmin() ? html`<button class="btn primary" data-act="log-new">${I('plus')} Log participation</button>` : ''}
+    <button class="btn" data-act="export-activity">${I('download')} Export</button></div></div>
+  <div class="cards">
+    <div class="card stat"><b>${list.length}</b><span>times partners helped${a.year ? ' in ' + a.year : ''}</span></div>
+    <div class="card stat"><b>${people}</b><span>different partners</span></div>
+    <div class="card stat" style="grid-column:span 2;min-width:0"><div class="bars">${acts.slice(0, 5).map(function (k) {
+      return html`<div class="bar-row"><span class="nowrap" style="overflow:hidden;text-overflow:ellipsis">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(4, Math.round(byAct[k] / max * 100))}%"></div></div><b class="small">${byAct[k]}</b></div>`;
+    })}${acts.length ? '' : html`<span class="muted small">Nothing logged for this view yet.</span>`}</div></div>
+  </div>
+  <div class="toolbar">
+    <label class="search">${I('search')}<span class="sr">Search participation</span><input id="act-q" class="input" type="search" placeholder="Search partner, notes…" value="${a.q}" data-in="act.q"></label>
+    <div>${selectHtml('act-year', 'act.year', [['', 'All school years']].concat(years.map(function (y) { return [y, y]; })), a.year, 'School year')}</div>
+    <div>${selectHtml('act-activity', 'act.activity', [['', 'All activities']].concat(actOpts.map(function (x) { return [x, x]; })), a.activity, 'Activity')}</div>
+    <div>${selectHtml('act-academy', 'act.academy', [['', 'All academies']].concat(L().academies.map(function (x) { return [x.name, x.name]; })), a.academy, 'Academy')}</div>
+    <div>${selectHtml('act-staff', 'act.staff', [['', 'All Piper staff']].concat(staffOpts.map(function (x) { return [x, x]; })), a.staff, 'Piper staff')}</div>
+  </div>
+  <div class="card" style="overflow:hidden">${list.length ? html`<table class="tbl plain"><thead><tr><th>Date</th><th>Partner</th><th>Activity</th><th>Academy</th><th>Piper staff</th><th>Notes</th>${isAdmin() ? html`<th></th>` : ''}</tr></thead><tbody>
+    ${list.slice(0, 400).map(function (e) {
+      var c = IX.byId.get(e.contactId);
+      return html`<tr data-act="open" data-id="${e.contactId}"><td class="nowrap"><b>${fmtDate(e.date)}</b></td>
+        <td><b>${c ? displayName(c) : e.contactName}</b><div class="small muted">${c ? c.company : '(deleted)'}</div></td>
+        ${td('Activity', e.activity)}${td('Academy', e.academy ? acadBadge(e.academy, true) : '')}${td('Staff', e.staff)}${td('Notes', e.notes)}
+        ${isAdmin() ? html`<td><button class="x" data-act="del-eng" data-id="${e.id}" aria-label="Delete">${I('trash')}</button></td>` : ''}</tr>`;
+    })}</tbody></table>${list.length > 400 ? html`<div class="more muted small">Showing the newest 400. Use the filters or Export to see everything.</div>` : ''}`
+    : html`<div class="empty"><h3>No participation logged${a.year || a.activity || a.academy || a.staff || a.q ? ' for these filters' : ' yet'}</h3>
+      <p>${isAdmin() ? 'After an event, select the people in the Directory and choose "Log participation", or use the button above.' : 'Admins log participation after events.'}</p></div>`}</div>`;
+}
+
+/* ================================================================ partnerships */
+function viewPartnerships() {
+  var p = S.px, toks = norm(p.q).split(/\s+/).filter(Boolean);
+  var list = S.d.partnerships.filter(function (x) {
+    if (p.type && x.type !== p.type) return false;
+    if (p.status && (x.status || 'Active') !== p.status) return false;
+    var c = IX.byId.get(x.contactId), hay = norm([x.company, x.partnerName, x.email, x.notes, x.academy, c ? displayName(c) : ''].join(' '));
+    return toks.every(function (t) { return hay.indexOf(t) >= 0; });
+  }).sort(function (a, b) { return norm(a.company).localeCompare(norm(b.company)); });
+  var types = uniq(L().partnershipTypes.concat(S.d.partnerships.map(function (x) { return x.type; })));
+  return html`
+  <div class="page-head"><div><h1>Internship &amp; CCP partners</h1><p>Companies hosting internships, CCPs, and EEs. Linked to the person you work with.</p></div>
+    <div class="row">${isAdmin() ? html`<button class="btn primary" data-act="px-new">${I('plus')} Add partnership</button>` : ''}
+    <button class="btn" data-act="export-px">${I('download')} Export</button></div></div>
+  <div class="toolbar">
+    <label class="search">${I('search')}<span class="sr">Search partnerships</span><input id="px-q" class="input" type="search" placeholder="Search company, person…" value="${p.q}" data-in="px.q"></label>
+    <div>${selectHtml('px-type', 'px.type', [['', 'All types']].concat(types.map(function (t) { return [t, t]; })), p.type, 'Type')}</div>
+    <div>${selectHtml('px-status', 'px.status', [['Active', 'Active'], ['Past', 'Past'], ['', 'Active and past']], p.status, 'Status')}</div>
+  </div>
+  <div class="card" style="overflow:hidden">${list.length ? html`<table class="tbl plain"><thead><tr><th>Company</th><th>Type</th><th>Partner</th><th>Email</th><th>Academy</th><th>Year</th>${isAdmin() ? html`<th></th>` : ''}</tr></thead><tbody>
+    ${list.map(function (x) {
+      var c = IX.byId.get(x.contactId);
+      return html`<tr ${c ? raw('data-act="open" data-id="' + esc(c.id) + '"') : ''}><td><b>${x.company}</b>${x.status === 'Past' ? html` <span class="status Inactive">Past</span>` : ''}${x.notes ? html`<div class="small muted">${x.notes}</div>` : ''}</td>
+        ${td('Type', html`<span class="tag plain">${x.type}</span>`)}${td('Partner', c ? displayName(c) : x.partnerName)}${td('Email', x.email)}
+        ${td('Academy', x.academy ? acadBadge(x.academy, true) : '')}${td('Year', x.schoolYear)}
+        ${isAdmin() ? html`<td><button class="btn sm" data-act="px-edit" data-id="${x.id}">${I('edit')} Edit</button></td>` : ''}</tr>`;
+    })}</tbody></table>` : html`<div class="empty"><h3>No partnerships here</h3><p>Try "Active and past", or add one.</p></div>`}</div>`;
+}
+
+/* ================================================================ pending submissions */
+function viewPending() {
+  var subs = S.d.submissions.slice().sort(function (a, b) { return String(b.submittedAt).localeCompare(String(a.submittedAt)); });
+  var pending = subs.filter(function (s) { return (s.status || 'Pending') === 'Pending'; });
+  var done = subs.filter(function (s) { return s.status && s.status !== 'Pending'; });
+  var tab = S.pendTab;
+  return html`
+  <div class="page-head"><div><h1>Partner form submissions</h1><p>New people who filled out the public form. Nothing reaches the directory until an admin approves it.</p></div>
+    <a class="btn" href="#share">${I('link')} Share the form</a></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="${tab === 'pending'}" data-act="pend-tab" data-v="pending">Waiting (${pending.length})</button>
+    <button role="tab" aria-selected="${tab === 'done'}" data-act="pend-tab" data-v="done">Reviewed (${done.length})</button></div>
+  ${tab === 'pending' ? (pending.length ? html`<div class="stack">${pending.map(subCard)}</div>` : html`<div class="card empty"><h3>All caught up</h3><p>New partner form submissions will show up here${L().config.NOTIFY_EMAILS ? ', and we will email ' + L().config.NOTIFY_EMAILS : ''}.</p></div>`)
+  : (done.length ? html`<div class="card" style="overflow:hidden"><table class="tbl plain"><thead><tr><th>Submitted</th><th>Name</th><th>Company</th><th>Outcome</th><th>By</th></tr></thead><tbody>
+      ${done.map(function (s) {
+        var c = s.contactId && IX.byId.get(s.contactId);
+        return html`<tr ${c ? raw('data-act="open" data-id="' + esc(c.id) + '"') : ''}><td class="nowrap">${fmtDate(s.submittedAt)}</td><td><b>${s.first} ${s.last}</b><div class="small muted">${s.email}</div></td>
+          ${td('Company', s.company)}<td data-l="Outcome"><span class="status ${s.status === 'Rejected' ? 'Inactive' : 'Active'}">${s.status}</span></td>${td('By', s.reviewedBy)}</tr>`;
+      })}</tbody></table></div>` : html`<div class="card empty"><p>Nothing reviewed yet.</p></div>`)}`;
+}
+function subCard(s) {
+  var matches = findMatches(s, null);
+  var li = safeUrl(s.linkedin);
+  return html`<article class="card sub-card">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div><h2 style="margin:0;font-size:19px">${[s.title, s.first, s.last].filter(Boolean).join(' ')}</h2>
+        <div class="muted">${[s.profession, s.company].filter(Boolean).join(' · ')}</div></div>
+      <span class="small muted">Submitted ${fmtDate(s.submittedAt)}</span></div>
+    <div class="sub-grid"><div class="stack" style="gap:10px">
+      <dl class="facts">${fact('Email', s.email)}${fact('Phone', s.phone)}${fact('Location', s.location)}${fact('LinkedIn', li ? html`<a href="${li}" target="_blank" rel="noopener noreferrer">${li}</a>` : '')}
+        ${fact('Connection', s.relationship)}${fact('Knows at Piper', s.staffKnown)}${fact('Availability', s.availability)}</dl>
+      ${s.roles.length ? html`<div><div class="label" style="margin-bottom:6px">Open to</div><div class="chips">${s.roles.map(function (r) { return html`<span class="tag">${r}</span>`; })}</div></div>` : ''}
+      ${s.academies.length ? html`<div class="chips">${s.academies.map(function (a) { return acadBadge(a, true); })}</div>` : ''}
+      ${s.message ? html`<p class="notes">${s.message}</p>` : ''}
+    </div><div class="stack" style="gap:10px;align-content:start">
+      ${matches.length ? html`<div class="warnbox"><b>${I('alert')} Might already be in the directory</b></div>
+        ${matches.slice(0, 4).map(function (m) {
+          return html`<div class="match"><div><b>${displayName(m.c)}</b><div class="small muted">${[m.c.company, m.c.email].filter(Boolean).join(' · ')}</div><div class="tiny muted">${m.why}</div></div>
+            <button class="btn sm" data-act="pend-merge" data-id="${s.id}" data-cid="${m.c.id}">${I('merge')} Merge into this person</button></div>`;
+        })}` : html`<div class="okbox">${I('check')} No one in the directory matches this person.</div>`}
+    </div></div>
+    <div class="row" style="justify-content:flex-end;border-top:1px solid var(--line);padding-top:12px">
+      <button class="btn danger" data-act="pend-reject" data-id="${s.id}">Reject</button>
+      <button class="btn primary" data-act="pend-approve" data-id="${s.id}">${I('plus')} Add as new partner</button></div>
+  </article>`;
+}
+
+/* ================================================================ data health */
+function viewHealth() {
+  var cs = S.d.contacts.filter(function (c) { return c.status !== 'Inactive'; });
+  var stale = staleMonths();
+  var pairs = duplicatePairs();
+  var n = function (fn) { return cs.filter(fn).length; };
+  var items = [
+    ['name', 'No name', n(function (c) { return !c.first && !c.last; }), 'Only an email address. Add a name so people can find them.'],
+    ['reach', 'No email or phone', n(function (c) { return !c.email && !c.phone; }), 'No way to reach them.'],
+    ['role', 'No role yet', n(function (c) { return !c.roles.length; }), 'Tag what they can help with so they show up in role filters.'],
+    ['academy', 'No academy yet', n(function (c) { return !c.academies.length; }), 'Tag academies so each academy can find their people.'],
+    ['stale', 'Not contacted in ' + stale + '+ months', n(function (c) { return c.lastContact && monthsSince(c.lastContact) >= stale; }), 'Good people to re-engage.'],
+    ['never', 'No contact date recorded', n(function (c) { return !c.lastContact; }), 'Log participation to fill this in automatically.']
+  ];
+  return html`
+  <div class="page-head"><div><h1>Data health</h1><p>Quick ways to keep the list clean. Counts skip people marked Inactive.</p></div></div>
+  <div class="cards">${items.map(function (it) {
+    return html`<button class="card stat" style="text-align:left;cursor:pointer" data-act="health-filter" data-v="${it[0]}"><b>${it[2]}</b><span><b style="display:inline;font-size:inherit;color:var(--ink)">${it[1]}</b><br>${it[3]}</span></button>`;
+  })}</div>
+  <div class="card card-pad"><h2 style="margin:0 0 4px;font-size:18px">Possible duplicates (${pairs.length})</h2>
+    <p class="muted small" style="margin:0 0 12px">Same email, same phone, or same name. Merging keeps one record, fills in blanks from the other, and moves its participation history over.</p>
+    ${pairs.length ? html`<div class="stack" style="gap:8px">${pairs.map(function (p) {
+      return html`<div class="match"><div class="grow"><b>${displayName(p.a)}</b> <span class="muted small">${p.a.id} · ${p.a.company}</span><br>
+        <b>${displayName(p.b)}</b> <span class="muted small">${p.b.id} · ${p.b.company}</span><div class="tiny muted">${p.why}</div></div>
+        <div class="row"><button class="btn sm" data-act="dupe-ignore" data-v="${p.key}">Not a duplicate</button>
+        <button class="btn sm primary" data-act="dupe-merge" data-a="${p.a.id}" data-b="${p.b.id}">${I('merge')} Merge…</button></div></div>`;
+    })}</div>` : html`<div class="okbox">${I('check')} No duplicates found.</div>`}
+  </div>`;
+}
+
+/* ================================================================ settings */
+function viewSettings() {
+  var s = L(), c = s.config;
+  var cfg = function (key, label, help, type) {
+    return html`<label class="field"><span>${label}</span>${type === 'area' ? html`<textarea class="input" name="cfg:${key}">${c[key] || ''}</textarea>` : html`<input class="input" name="cfg:${key}" value="${c[key] || ''}">`}${help ? html`<small>${help}</small>` : ''}</label>`;
+  };
+  var here = location.origin + location.pathname;
+  return html`
+  <div class="page-head"><div><h1>Settings</h1><p>Saved to the Settings tab in the Google Sheet. Renaming a role or academy updates everyone tagged with it.</p></div></div>
+  <form data-form="settings" class="stack" style="gap:16px">
+    <div class="card card-pad"><h2 class="section-title">Roles: ways partners help</h2>
+      <table class="set-table" id="set-roles"><tbody>${s.roles.map(function (r) { return roleRow(r); })}</tbody></table>
+      <button type="button" class="btn sm" data-act="set-add" data-v="role">${I('plus')} Add role</button>
+      <p class="tiny muted">Descriptions appear on the public partner form. Uncheck "On form" to hide a role from partners but keep it for staff.</p></div>
+    <div class="card card-pad"><h2 class="section-title">Academies</h2>
+      <table class="set-table" id="set-acads"><tbody>${s.academies.map(function (a) { return acadRow(a); })}</tbody></table>
+      <button type="button" class="btn sm" data-act="set-add" data-v="acad">${I('plus')} Add academy</button></div>
+    <div class="card card-pad"><div class="grid2">
+      <label class="field"><span>Relationship options</span><textarea class="input" name="relationships" rows="8">${s.relationships.join('\n')}</textarea><small>One per line.</small></label>
+      <label class="field"><span>Piper staff names</span><textarea class="input" name="staff" rows="8">${s.staff.join('\n')}</textarea><small>One per line. Used for "Piper staff contact".</small></label>
+      <label class="field span2"><span>Admins (can add, edit, approve, delete)</span><textarea class="input" name="admins" rows="4">${(s.admins || []).join('\n')}</textarea>
+        <small>One email per line. Everyone else @${c.STAFF_DOMAIN || 'piperschools.us'} can view only. The sheet owner is always an admin.</small></label>
+    </div></div>
+    <div class="card card-pad"><h2 class="section-title">Partner form &amp; notifications</h2><div class="grid2">
+      ${cfg('FORM_TITLE', 'Form title')}${cfg('SCHOOL_NAME', 'School name')}
+      <div class="span2">${cfg('FORM_INTRO', 'Form introduction', 'The welcome text partners see at the top of the form.', 'area')}</div>
+      ${cfg('NOTIFY_EMAILS', 'Email me about new submissions', 'Separate several emails with commas.')}
+      ${cfg('STALE_MONTHS', 'Months before someone counts as "not contacted recently"')}
+    </div></div>
+    <div class="card card-pad"><h2 class="section-title">Connection (set once during setup)</h2><div class="grid2">
+      ${cfg('PUBLIC_FORM_URL', 'Public partner form link', 'The link you share with partners. Usually your GitHub address + ?page=join')}
+      ${cfg('STAFF_APP_URL', 'Staff app link', 'Used in notification emails.')}
+      <div class="span2">${cfg('ALLOWED_APP_URLS', 'Allowed GitHub app addresses', 'Sign-in only sends people back to these addresses. This page is: ' + here, 'area')}</div>
+    </div></div>
+    <div class="row" style="justify-content:space-between">
+      ${MODE !== 'gas' ? html`<button type="button" class="btn danger" data-act="signout-all">${I('out')} Sign everyone out of the GitHub app</button>` : html`<span></span>`}
+      <button class="btn primary" type="submit">${I('check')} Save settings</button></div>
+  </form>`;
+}
+function roleRow(r) {
+  r = r || { name: '', description: '', showOnForm: true };
+  return html`<tr data-orig="${r.name}"><td style="width:28%"><input class="input" name="role-name" value="${r.name}" placeholder="Role name" aria-label="Role name"></td>
+    <td><input class="input" name="role-desc" value="${r.description}" placeholder="Short description for partners" aria-label="Role description"></td>
+    <td class="nowrap"><label class="chk small" style="padding-top:8px"><input type="checkbox" name="role-show" ${r.showOnForm ? raw('checked') : ''}> On form</label></td>
+    <td><button type="button" class="x" data-act="set-rm" aria-label="Remove role">${I('trash')}</button></td></tr>`;
+}
+function acadRow(a) {
+  a = a || { name: '', description: '' };
+  return html`<tr data-orig="${a.name}"><td style="width:34%"><input class="input" name="acad-name" value="${a.name}" placeholder="Academy name" aria-label="Academy name"></td>
+    <td><input class="input" name="acad-desc" value="${a.description}" placeholder="What careers it covers" aria-label="Academy description"></td>
+    <td><button type="button" class="x" data-act="set-rm" aria-label="Remove academy">${I('trash')}</button></td></tr>`;
+}
+
+/* ================================================================ share the public form */
+function publicFormUrl() {
+  var c = L().config;
+  if (c.PUBLIC_FORM_URL) return c.PUBLIC_FORM_URL;
+  if (MODE === 'web' || MODE === 'demo') return location.origin + location.pathname + '?page=join' + (MODE === 'demo' ? '&demo' : '');
+  return '';
+}
+function qrSvg(text) {
+  try { var q = qrcode(0, 'M'); q.addData(text); q.make(); return raw(q.createSvgTag({ cellSize: 6, margin: 2, scalable: true })); }
+  catch (e) { return html`<span class="muted small">QR code unavailable</span>`; }
+}
+function viewShare() {
+  var url = publicFormUrl(), c = L().config;
+  var invite = 'Hi [Name],\n\nPiper High School\'s academies connect students with professionals like you for career interviews, capstone presentations, mock interviews, and internships. If you are open to helping (even once a year), please fill out this short form:\n\n' + url + '\n\nThank you!\n' + S.d.me.name;
+  return html`
+  <div class="page-head"><div><h1>Share the partner form</h1><p>Anyone can fill it out, no sign-in needed. Submissions wait in <a href="#pending">Pending</a> for an admin.</p></div></div>
+  ${url ? html`<div class="card card-pad"><div class="row" style="gap:24px;align-items:flex-start">
+    <div class="qr" id="qr">${qrSvg(url)}</div>
+    <div class="stack grow" style="min-width:260px">
+      <div><div class="label" style="margin-bottom:6px">Form link</div><div class="linkbox"><span class="grow">${url}</span><button class="btn sm" data-act="copy" data-text="${url}">${I('copy')} Copy</button></div></div>
+      <div class="row"><a class="btn" href="${url}" target="_blank" rel="noopener">${I('ext')} Open the form</a>
+        <button class="btn" data-act="qr-png">${I('download')} Download QR image</button>
+        <button class="btn" data-act="print-flyer">${I('print')} Print a sign</button></div>
+      <p class="small muted" style="margin:0">Tip: put the printed sign on the check-in table at capstone night, career fairs, and advisory board meetings.</p>
+    </div></div></div>
+    <div class="card card-pad" style="margin-top:16px"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 class="section-title" style="margin:0">Invite email</h2>
+      <button class="btn sm" data-act="copy" data-text="${invite}">${I('copy')} Copy</button></div><p class="notes">${invite}</p></div>`
+  : html`<div class="card card-pad warnbox">The public form link has not been set yet. ${isAdmin() ? html`Add it under <a href="#settings">Settings</a> → "Public partner form link".` : 'Ask an admin to add it in Settings.'}</div>`}`;
+}
+
+
+/* ================================================================ modals */
+function openModal(m) {
+  S.modal = m; renderLayer();
+  setTimeout(function () {
+    var el = $layer.querySelector('.modal [autofocus]') || $layer.querySelector('.modal input:not([type=hidden]):not([type=checkbox]), .modal select, .modal textarea, .modal button');
+    if (el) el.focus();
+  }, 30);
+}
+function closeModal() { S.modal = null; renderLayer(); }
+function modalHtml() {
+  var m = S.modal, spec = MODALS[m.type](m);
+  var inner = html`<div class="modal-head"><h2 id="m-title">${spec.title}</h2><button type="button" class="x" data-act="close-modal" aria-label="Close">${I('x')}</button></div>
+    <div class="modal-body">${spec.body}<div class="form-err" style="margin-top:12px"></div></div>
+    <div class="modal-foot">${spec.foot}</div>`;
+  return html`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title"><div class="scrim" data-act="close-modal"></div>
+    ${spec.form ? html`<form class="modal-card ${spec.narrow ? 'narrow' : ''}" data-form="${spec.form}" novalidate>${inner}</form>` : html`<div class="modal-card ${spec.narrow ? 'narrow' : ''}">${inner}</div>`}</div>`;
+}
+function cancelBtn(label) { return html`<button type="button" class="btn" data-act="close-modal">${label || 'Cancel'}</button>`; }
+function chipBoxes(name, values, checked, withDesc) {
+  return html`<div class="chips">${values.map(function (v) {
+    return html`<label class="chip"><input type="checkbox" name="${name}" value="${v}" ${checked.indexOf(v) >= 0 ? raw('checked') : ''}>${v}</label>`;
+  })}</div>`;
+}
+function optionList(values, cur, blankLabel) {
+  var vals = uniq(values.concat(cur ? [cur] : []));
+  return html`${blankLabel != null ? html`<option value="">${blankLabel}</option>` : ''}${vals.map(function (v) { return html`<option ${v === cur ? raw('selected') : ''}>${v}</option>`; })}`;
+}
+function contactOptionLabel(c) { return displayName(c) + ' — ' + (c.company || c.email || 'no company') + ' (' + c.id + ')'; }
+function contactDatalist(id) {
+  return html`<datalist id="${id}">${S.d.contacts.filter(function (c) { return c.status !== 'Do Not Contact'; }).map(function (c) { return html`<option value="${contactOptionLabel(c)}"></option>`; })}</datalist>`;
+}
+function idFromLabel(v) { var m = /\(([A-Z]\d{3,})\)\s*$/.exec(v || ''); return m ? m[1] : ''; }
+
+var MODALS = {};
+
+/* ---------- add / edit / approve contact */
+MODALS.contact = function (m) {
+  var c = m.id ? IX.byId.get(m.id) : (m.draft || {});
+  c = Object.assign({ roles: [], academies: [], staff: [], status: 'Active' }, c);
+  var s = L();
+  var staffAll = uniq(s.staff.concat(c.staff)).sort();
+  var title = m.sub ? 'Add ' + [c.first, c.last].join(' ') + ' to the directory' : m.id ? 'Edit ' + displayName(c) : 'Add a partner';
+  return {
+    form: 'contact', title: title,
+    body: html`
+    ${m.sub ? html`<div class="okbox" style="margin-bottom:12px">From the partner form. Check the details, then save.</div>` : ''}
+    <div class="grid3">
+      <label class="field"><span>Title</span><input class="input" name="title" value="${c.title}" placeholder="Dr."></label>
+      <label class="field"><span>First name</span><input class="input" name="first" value="${c.first}" data-in="dupe" autocomplete="off" ${!m.id ? raw('autofocus') : ''}></label>
+      <label class="field"><span>Last name</span><input class="input" name="last" value="${c.last}" data-in="dupe" autocomplete="off"></label>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <label class="field"><span>Job / profession</span><input class="input" name="profession" value="${c.profession}"></label>
+      <label class="field"><span>Company</span><input class="input" name="company" value="${c.company}" data-in="dupe"></label>
+      <label class="field"><span>Email</span><input class="input" type="email" name="email" value="${c.email}" data-in="dupe" autocomplete="off"></label>
+      <label class="field"><span>Phone</span><input class="input" type="tel" name="phone" value="${c.phone}" data-in="dupe" autocomplete="off"></label>
+      <label class="field"><span>City / area</span><input class="input" name="location" value="${c.location}"></label>
+      <label class="field"><span>LinkedIn</span><input class="input" name="linkedin" value="${c.linkedin}" placeholder="linkedin.com/in/…"></label>
+    </div>
+    <div id="dupe-box" style="margin-top:12px">${dupeBox(c, m.id)}</div>
+    <div class="field" style="margin-top:14px"><span>Can help with</span>${chipBoxes('roles', uniq(s.roles.map(function (r) { return r.name; }).concat(c.roles)), c.roles)}</div>
+    <div class="field" style="margin-top:14px"><span>Academies</span>${chipBoxes('academies', uniq(s.academies.map(function (a) { return a.name; }).concat(c.academies)), c.academies)}</div>
+    <div class="grid2" style="margin-top:14px">
+      <label class="field"><span>Relationship to Piper</span><select class="input" name="relationship">${optionList(s.relationships, c.relationship, '—')}</select></label>
+      <label class="field"><span>Availability</span><select class="input" name="availability">${optionList(s.availability, c.availability, '—')}</select></label>
+      <label class="field"><span>Last positive contact</span><input class="input" type="date" name="lastContact" value="${c.lastContact}"><small>Fills in automatically when you log participation.</small></label>
+      <label class="field"><span>Raptor cleared on</span><input class="input" type="date" name="raptor" value="${c.raptor}"><small>Leave blank if not checked in through Raptor.</small></label>
+      <label class="field"><span>Status</span><select class="input" name="status">${optionList(s.statuses, c.status)}</select></label>
+    </div>
+    <div class="field" style="margin-top:14px"><span>Piper staff contact</span>${staffAll.length ? chipBoxes('staff', staffAll, c.staff) : ''}
+      <input class="input" name="staffOther" placeholder="Someone else? Type their name (separate several with ;)" style="margin-top:6px"></div>
+    <label class="field" style="margin-top:14px"><span>Notes</span><textarea class="input" name="notes" placeholder="Anything future staff should know (great with nervous students, prefers email, only available after 3:30…)">${c.notes}</textarea></label>`,
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('check')} ${m.sub ? 'Add to directory' : 'Save'}</button>`
+  };
+};
+function dupeBox(c, excludeId) {
+  if (!c.email && !c.phone && !(c.first && c.last)) return '';
+  var ms = findMatches(c, excludeId);
+  if (!ms.length) return '';
+  return html`<div class="warnbox"><b>Possible duplicate:</b> ${ms.slice(0, 3).map(function (x, i) {
+    return html`${i ? ', ' : ''}<a href="#c/${x.c.id}" data-act="close-modal">${displayName(x.c)}</a> <span class="small">(${x.why})</span>`;
+  })}. Check before saving.</div>`;
+}
+function readContactForm(form) {
+  var g = function (n) { var el = form.elements[n]; return el ? String(el.value || '').trim() : ''; };
+  var all = function (n) { return Array.prototype.map.call(form.querySelectorAll('input[name="' + n + '"]:checked'), function (i) { return i.value; }); };
+  return {
+    title: g('title'), first: g('first'), last: g('last'), profession: g('profession'), company: g('company'),
+    email: g('email').toLowerCase(), phone: g('phone'), location: g('location'), linkedin: g('linkedin'),
+    roles: all('roles'), academies: all('academies'), relationship: g('relationship'), availability: g('availability'),
+    lastContact: g('lastContact'), raptor: g('raptor'), status: g('status') || 'Active',
+    staff: uniq(all('staff').concat(g('staffOther').split(/\s*;\s*/))), notes: g('notes')
+  };
+}
+
+/* ---------- log participation */
+MODALS.log = function (m) {
+  var s = L();
+  return {
+    form: 'log', title: 'Log participation',
+    body: html`
+    <div class="field"><span>Who helped</span><div class="chips" id="log-who">${logWho(m.ids)}</div>
+      <input class="input" id="log-add" list="dl-contacts" placeholder="Add a person: start typing a name" data-in="log-add" autocomplete="off" style="margin-top:6px" ${!m.ids.length ? raw('autofocus') : ''}>${contactDatalist('dl-contacts')}</div>
+    <div class="grid2" style="margin-top:14px">
+      <label class="field"><span>Date</span><input class="input" type="date" name="date" value="${todayIso()}" required></label>
+      <label class="field"><span>What they did</span><select class="input" name="activity" data-in="log-activity" ${m.ids.length ? raw('autofocus') : ''}>
+        ${s.roles.map(function (r) { return html`<option>${r.name}</option>`; })}<option value="__other">Something else…</option></select></label>
+      <label class="field hide" id="log-other-wrap"><span>Describe it</span><input class="input" name="activityOther" placeholder="Career fair, guest speaker, job shadow…"></label>
+      <label class="field"><span>Academy (optional)</span><select class="input" name="academy"><option value="">—</option>${s.academies.map(function (a) { return html`<option>${a.name}</option>`; })}</select></label>
+      <label class="field"><span>Piper staff</span><input class="input" name="staff" list="dl-staff" value="${S.d.me.name}"><datalist id="dl-staff">${s.staff.map(function (x) { return html`<option value="${x}"></option>`; })}</datalist></label>
+      <label class="field span2"><span>Notes (optional)</span><input class="input" name="notes" placeholder="How it went, which students, follow-ups…"></label>
+    </div>
+    <p class="small muted" style="margin:12px 0 0">Logging also updates each person's "last positive contact" and adds the role to their profile if it is new.</p>`,
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('check')} Log for <span id="log-n">${plural(m.ids.length, 'person', 'people')}</span></button>`
+  };
+};
+function logWho(ids) {
+  if (!ids.length) return html`<span class="muted small">No one yet</span>`;
+  return ids.map(function (id) {
+    var c = IX.byId.get(id); if (!c) return '';
+    return html`<span class="chip on">${displayName(c)}<button type="button" class="x" style="padding:0;color:#fff" data-act="log-rm" data-id="${id}" aria-label="Remove ${displayName(c)}">${I('x')}</button></span>`;
+  });
+}
+function refreshLogWho() {
+  put(document.getElementById('log-who'), logWho(S.modal.ids));
+  var n = document.getElementById('log-n'); if (n) n.textContent = plural(S.modal.ids.length, 'person', 'people');
+}
+
+/* ---------- bulk edit */
+MODALS.bulk = function () {
+  var s = L(), roles = s.roles.map(function (r) { return r.name; }), acads = s.academies.map(function (a) { return a.name; });
+  return {
+    form: 'bulk', title: 'Edit ' + plural(S.sel.size, 'person', 'people'),
+    body: html`<p class="muted small" style="margin-top:0">Only what you pick changes. Everything else stays as it is.</p>
+      <div class="field"><span>Add roles</span>${chipBoxes('addRoles', roles, [])}</div>
+      <div class="field" style="margin-top:12px"><span>Remove roles</span>${chipBoxes('removeRoles', roles, [])}</div>
+      <div class="field" style="margin-top:12px"><span>Add academies</span>${chipBoxes('addAcademies', acads, [])}</div>
+      <div class="field" style="margin-top:12px"><span>Remove academies</span>${chipBoxes('removeAcademies', acads, [])}</div>
+      ${s.staff.length ? html`<div class="field" style="margin-top:12px"><span>Add Piper staff contact</span>${chipBoxes('addStaff', s.staff, [])}</div>` : ''}
+      <div class="grid2" style="margin-top:12px">
+        <label class="field"><span>Status</span><select class="input" name="status"><option value="">(no change)</option>${s.statuses.map(function (x) { return html`<option>${x}</option>`; })}</select></label>
+        <label class="field"><span>Relationship</span><select class="input" name="relationship"><option value="">(no change)</option>${s.relationships.map(function (x) { return html`<option>${x}</option>`; })}</select></label>
+      </div>`,
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('check')} Apply to ${S.sel.size}</button>`
+  };
+};
+
+/* ---------- merge duplicates */
+MODALS.merge = function (m) {
+  var a = IX.byId.get(m.a), b = IX.byId.get(m.b);
+  if (!a || !b) return { title: 'Merge', body: html`<p>One of these records no longer exists.</p>`, foot: cancelBtn('Close') };
+  var col = function (c, checked) {
+    var n = (IX.eng.get(c.id) || []).length;
+    return html`<label class="opt" style="display:block"><div class="row"><input type="radio" name="keep" value="${c.id}" ${checked ? raw('checked') : ''}><b>Keep ${displayName(c)}</b></div>
+      <dl class="facts small" style="grid-template-columns:90px 1fr;margin-top:8px">${fact('ID', c.id)}${fact('Company', c.company)}${fact('Email', c.email)}${fact('Phone', c.phone)}
+      ${fact('Roles', c.roles.join(', '))}${fact('Last contact', fmtMonth(c.lastContact))}${fact('History', plural(n, 'record'))}${fact('Notes', c.notes)}</dl></label>`;
+  };
+  return {
+    form: 'merge', title: 'Merge duplicates',
+    body: html`<p class="muted small" style="margin-top:0">Pick the record to keep. Its details win. Blank fields are filled from the other one, roles and academies are combined, notes are joined, and participation history moves over. The other record is deleted.</p>
+      <div class="grid2">${col(a, true)}${col(b, false)}</div>`,
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('merge')} Merge</button>`
+  };
+};
+
+/* ---------- merge a form submission into an existing person */
+MODALS.pendMerge = function (m) {
+  var s = S.d.submissions.filter(function (x) { return x.id === m.sid; })[0], c = IX.byId.get(m.cid);
+  return {
+    form: 'pend-merge', title: 'Merge into ' + displayName(c), narrow: true,
+    body: html`<p style="margin-top:0">${s.first} ${s.last}'s form answers will be added to <b>${displayName(c)}</b> (${c.id}):</p>
+      <ul class="small"><li>Blank fields are filled in from the form</li><li>Their new interests and academies are added</li><li>Their message is added to the notes</li></ul>
+      <label class="chk"><input type="checkbox" name="preferNew"> <span>Use the newer job, company, phone, and location from the form<br><span class="small muted">Form: ${[s.profession, s.company, s.phone].filter(Boolean).join(' · ')}<br>Now: ${[c.profession, c.company, c.phone].filter(Boolean).join(' · ')}</span></span></label>`,
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('merge')} Merge</button>`
+  };
+};
+
+/* ---------- partnership */
+MODALS.px = function (m) {
+  var x = m.id ? S.d.partnerships.filter(function (p) { return p.id === m.id; })[0] : { status: 'Active', type: 'Internship' };
+  var c = x.contactId && IX.byId.get(x.contactId);
+  var s = L();
+  return {
+    form: 'px', title: m.id ? 'Edit ' + x.company : 'Add a partnership',
+    body: html`<div class="grid2">
+      <label class="field"><span>Company / program</span><input class="input" name="company" value="${x.company}" required autofocus></label>
+      <label class="field"><span>Type</span><select class="input" name="type">${optionList(s.partnershipTypes, x.type)}</select></label>
+      <label class="field span2"><span>Person you work with</span><input class="input" name="contact" list="dl-px" value="${c ? contactOptionLabel(c) : ''}" data-in="px-contact" placeholder="Start typing a name from the directory" autocomplete="off">${contactDatalist('dl-px')}
+        <small>Not in the directory yet? Add them as a partner first, or just type their name below.</small></label>
+      <label class="field"><span>Partner name</span><input class="input" name="partnerName" value="${x.partnerName}"></label>
+      <label class="field"><span>Email</span><input class="input" name="email" value="${x.email}"></label>
+      <label class="field"><span>Phone</span><input class="input" name="phone" value="${x.phone}"></label>
+      <label class="field"><span>Academy</span><select class="input" name="academy">${optionList(s.academies.map(function (a) { return a.name; }), x.academy, '—')}</select></label>
+      <label class="field"><span>School year</span><input class="input" name="schoolYear" value="${x.schoolYear}" placeholder="${schoolYear(todayIso())}"></label>
+      <label class="field"><span>Status</span><select class="input" name="status">${optionList(['Active', 'Past'], x.status || 'Active')}</select></label>
+      <label class="field span2"><span>Notes</span><textarea class="input" name="notes">${x.notes}</textarea></label></div>`,
+    foot: html`${m.id ? html`<button type="button" class="btn danger" data-act="px-delete" data-id="${m.id}" style="margin-right:auto">${I('trash')} Delete</button>` : ''}${cancelBtn()}<button class="btn primary" type="submit">${I('check')} Save</button>`
+  };
+};
+
+/* ---------- confirm / copy */
+MODALS.confirm = function (m) {
+  return {
+    title: m.title, narrow: true, body: html`<div>${m.body}</div>`,
+    foot: html`${cancelBtn()}<button type="button" class="btn ${m.danger ? 'danger' : 'primary'}" data-act="m-yes" autofocus>${m.label || 'OK'}</button>`
+  };
+};
+MODALS.copy = function (m) {
+  return {
+    title: m.title || 'Copy', narrow: true,
+    body: html`<p class="small muted" style="margin-top:0">Your browser blocked automatic copying. Select the text below and copy it (⌘C / Ctrl+C).</p><textarea class="input" readonly rows="8" autofocus onfocus="this.select()">${m.text}</textarea>`,
+    foot: cancelBtn('Done')
+  };
+};
+
+
+/* ================================================================ public partner form */
+var PUB = { cfg: null, start: 0, done: null };
+function joinShell(content) {
+  var c = PUB.cfg || {};
+  put($app, html`<div class="join-hero"><div class="join-hero-in">
+      <div class="brand">${mark()}<div><b>${c.schoolName || 'Piper High School'}</b><span>Academies · Industry Partners</span></div></div>
+      <h1>${c.formTitle || 'Partner with Piper'}</h1>${c.formIntro ? html`<p>${c.formIntro}</p>` : ''}</div></div>
+    ${MODE === 'demo' ? html`<div class="banner" style="margin-top:0">Demo: submissions go to the demo's Pending tab and are not saved.</div>` : ''}
+    <div class="join-wrap"><div class="card join-card">${content}</div>
+    <p class="join-foot">Your information is shared only with Piper High School staff and is used only to invite you to work with students.</p></div>`);
+}
+function loadJoin() {
+  document.title = 'Partner with Piper';
+  joinShell(html`<div class="spinner"></div>`);
+  Backend.call('publicConfig').then(function (cfg) { PUB.cfg = cfg; PUB.start = Date.now(); renderJoinForm(); },
+    function (e) { joinShell(html`<div class="errbox">Sorry, the form could not load. ${e.message}</div><p><button class="btn" onclick="location.reload()">Try again</button></p>`); });
+}
+function renderJoinForm() {
+  var c = PUB.cfg;
+  if (PUB.done) {
+    return joinShell(html`<div style="text-align:center;padding:24px 8px"><div class="mark" style="width:56px;height:56px;margin:0 auto 14px;background:var(--ok);color:#fff;border-radius:50%">${I('check')}</div>
+      <h2 style="margin:0 0 8px;color:var(--piper-900)">Thank you, ${PUB.done}!</h2>
+      <p class="muted">We got your information. A Piper staff member will reach out when a student opportunity fits.</p>
+      <button class="btn" data-act="join-again">Submit another person</button></div>`);
+  }
+  joinShell(html`<form data-form="join" novalidate>
+    <fieldset><legend>About you</legend><p class="hint">Fields marked <span class="req">*</span> are required.</p>
+      <div class="grid3"><label class="field"><span>Title</span><input class="input" name="title" placeholder="Dr." autocomplete="honorific-prefix"></label>
+        <label class="field"><span>First name <span class="req">*</span></span><input class="input" name="first" required autocomplete="given-name"></label>
+        <label class="field"><span>Last name <span class="req">*</span></span><input class="input" name="last" required autocomplete="family-name"></label></div>
+      <div class="grid2" style="margin-top:12px">
+        <label class="field"><span>Email <span class="req">*</span></span><input class="input" type="email" name="email" required autocomplete="email"></label>
+        <label class="field"><span>Phone</span><input class="input" type="tel" name="phone" autocomplete="tel"></label>
+        <label class="field"><span>Job title / profession <span class="req">*</span></span><input class="input" name="profession" required autocomplete="organization-title" placeholder="Nurse, electrician, software engineer…"></label>
+        <label class="field"><span>Company / organization</span><input class="input" name="company" autocomplete="organization"></label>
+        <label class="field"><span>City</span><input class="input" name="location" autocomplete="address-level2"></label>
+        <label class="field"><span>LinkedIn (optional)</span><input class="input" name="linkedin" placeholder="linkedin.com/in/…"></label></div>
+    </fieldset>
+    <fieldset><legend>How would you like to help?</legend><p class="hint">Pick anything that sounds good. You can always say no to a specific request.</p>
+      <div class="opt-grid">${c.roles.map(function (r) { return html`<label class="opt"><input type="checkbox" name="roles" value="${r.name}"><div><b>${r.name}</b>${r.description ? html`<span>${r.description}</span>` : ''}</div></label>`; })}</div></fieldset>
+    <fieldset><legend>Which career areas fit you?</legend><p class="hint">Piper's academies group students by career interest. Choose any that match your work.</p>
+      <div class="opt-grid">${c.academies.map(function (a) { return html`<label class="opt"><input type="checkbox" name="academies" value="${a.name}"><div><b>${a.name}</b>${a.description ? html`<span>${a.description}</span>` : ''}</div></label>`; })}</div></fieldset>
+    <fieldset><legend>A few more details</legend>
+      <div class="field"><span>I can usually help</span><div class="chips">${c.availability.map(function (a) { return html`<label class="chip"><input type="radio" name="availability" value="${a}">${a === 'Either' ? 'Either way' : a}</label>`; })}</div></div>
+      <div class="grid2" style="margin-top:14px">
+        <label class="field"><span>How are you connected to Piper?</span><select class="input" name="relationship"><option value="">Choose one (optional)</option>${c.relationships.map(function (r) { return html`<option>${r}</option>`; })}</select></label>
+        <label class="field"><span>Do you know someone at Piper?</span><input class="input" name="staffKnown" placeholder="A teacher or staff member (optional)"></label>
+        <label class="field span2"><span>Anything else we should know?</span><textarea class="input" name="message" placeholder="Best times to reach you, specific interests, an internship you can offer…"></textarea></label>
+      </div></fieldset>
+    <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <label class="chk" style="margin-bottom:18px"><input type="checkbox" name="consent" required> <span>Piper High School staff may contact me about opportunities to work with students. <span class="req">*</span></span></label>
+    <div class="form-err" style="margin-bottom:12px"></div>
+    <button class="btn primary" type="submit" style="width:100%;min-height:50px;font-size:16px">Send my information</button>
+  </form>`);
+}
+function submitJoin(form) {
+  var g = function (n) { return String((form.elements[n] && form.elements[n].value) || '').trim(); };
+  var all = function (n) { return Array.prototype.map.call(form.querySelectorAll('input[name="' + n + '"]:checked'), function (i) { return i.value; }); };
+  var p = {
+    title: g('title'), first: g('first'), last: g('last'), email: g('email'), phone: g('phone'), profession: g('profession'),
+    company: g('company'), location: g('location'), linkedin: g('linkedin'), roles: all('roles'), academies: all('academies'),
+    availability: (form.querySelector('input[name="availability"]:checked') || {}).value || '', relationship: g('relationship'),
+    staffKnown: g('staffKnown'), message: g('message'), consent: form.elements.consent.checked, website: g('website'),
+    elapsedMs: Date.now() - PUB.start
+  };
+  var errs = [];
+  if (!p.first) errs.push(['first', 'your first name']);
+  if (!p.last) errs.push(['last', 'your last name']);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)) errs.push(['email', 'a valid email']);
+  if (!p.profession) errs.push(['profession', 'your job title or profession']);
+  if (!p.consent) errs.push(['consent', 'the permission checkbox']);
+  var box = form.querySelector('.form-err');
+  Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid]'), function (el) { el.removeAttribute('aria-invalid'); });
+  if (errs.length) {
+    errs.forEach(function (e) { form.elements[e[0]].setAttribute('aria-invalid', 'true'); });
+    put(box, html`<div class="errbox" role="alert">Please add ${errs.map(function (e) { return e[1]; }).join(', ')}.</div>`);
+    form.elements[errs[0][0]].focus();
+    return;
+  }
+  var btn = form.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Sending…';
+  Backend.call('submitPartner', p).then(function () { PUB.done = p.first; renderJoinForm(); window.scrollTo(0, 0); },
+    function (e) { btn.disabled = false; btn.textContent = 'Send my information'; put(box, html`<div class="errbox" role="alert">${e.message}</div>`); });
+}
+
+/* ================================================================ sign-in / setup / loading / error */
+function centerCard(content) { put($app, html`<div style="padding:0 16px"><div class="card center-card">${mark()}${content}</div></div>`); }
+function renderSignIn(msg) {
+  document.title = 'Sign in · Piper Industry Partners';
+  if (!CFG.STAFF_URL) return renderSetup('STAFF_URL is missing from the settings at the top of index.html.');
+  centerCard(html`<h1 style="margin:0 0 4px;font-size:24px;color:var(--piper-900)">Industry Partners</h1><p class="muted" style="margin:0 0 20px">Piper High School Academies · Staff sign-in</p>
+    ${msg ? html`<div class="errbox" style="margin-bottom:16px;text-align:left">${msg}</div>` : ''}
+    <a class="btn primary" href="${Auth.signInUrl()}" style="width:100%;min-height:48px">Sign in with your Piper Google account</a>
+    <p class="small muted">Google confirms your @piperschools.us account, then sends you right back here.</p>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <p class="small" style="margin:0">Industry partner? <a href="?page=join">Fill out our partner form →</a></p>`);
+}
+function renderSetup(extra) {
+  centerCard(html`<h1 style="margin:0 0 8px;font-size:22px;color:var(--piper-900)">Almost ready</h1>
+    <p class="muted">This copy of the app is not connected to the Google Sheet yet. Paste your two Apps Script links into <b>PIPER_CONFIG</b> at the top of <code>index.html</code> (see the setup guide).</p>
+    ${extra ? html`<div class="warnbox" style="text-align:left;margin-bottom:12px">${extra}</div>` : ''}
+    <a class="btn primary" href="?demo">Try the demo with sample data</a>`);
+}
+function renderLoading() {
+  put($app, html`<header class="topbar"><div class="topbar-in"><span class="brand">${mark()}<div><b>Industry Partners</b><span>Loading…</span></div></span></div></header>
+    <main><div class="card card-pad stack">${[1, 2, 3, 4, 5, 6].map(function (i) { return html`<div class="skel" style="width:${90 - i * 8}%"></div>`; })}</div>
+    <p class="muted small" style="text-align:center">Loading partners from the Google Sheet…</p></main>`);
+}
+function renderError(e) {
+  centerCard(html`<h1 style="margin:0 0 8px;font-size:22px">Could not load partners</h1><div class="errbox" style="text-align:left">${e.message}</div>
+    <div class="row" style="justify-content:center;margin-top:16px"><button class="btn primary" onclick="location.reload()">Try again</button>
+    ${MODE === 'web' ? html`<button class="btn" data-act="signout">Sign out</button>` : ''}</div>`);
+}
+
+
+/* ================================================================ errors & saving */
+function handleErr(e, form) {
+  if (e && (e.code === 'AUTH')) {
+    if (MODE === 'web') { Auth.clear(); S.d = null; closeModal(); return renderSignIn('Your sign-in expired. Please sign in again.'); }
+  }
+  var box = form && form.querySelector('.form-err');
+  if (box) {
+    put(box, html`<div class="errbox" role="alert">${e.message}${e.code === 'CONFLICT' && e.data ? html` <button type="button" class="btn sm" data-act="conflict-load">Load their version</button>` : ''}</div>`);
+    if (e.code === 'CONFLICT') S.conflict = e.data;
+    box.scrollIntoView({ block: 'nearest' });
+  } else toast(e.message || String(e), { err: true });
+}
+function saving(form, fn) {
+  var btn = form && form.querySelector('[type=submit]'), label = btn && btn.innerHTML;
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  return Promise.resolve().then(fn).catch(function (e) { handleErr(e, form); }).then(function () {
+    if (btn && document.body.contains(btn)) { btn.disabled = false; btn.innerHTML = label; }
+  });
+}
+function confirmThen(opts) { openModal(Object.assign({ type: 'confirm' }, opts)); }
+function afterChange() { reindex(); render(); renderLayer(); }
+
+/* ================================================================ click actions */
+var ACT = {
+  open: function (el) { S.drawer = el.dataset.id; history.replaceState(null, '', '#c/' + S.drawer); renderLayer(); },
+  'close-drawer': function () { S.drawer = null; history.replaceState(null, '', '#' + S.view); renderLayer(); },
+  'close-modal': function () { closeModal(); },
+  sel: function (el) { var id = el.dataset.id; if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id); render(); },
+  'sel-all': function () {
+    var list = filterContacts(), all = list.every(function (c) { return S.sel.has(c.id); });
+    list.forEach(function (c) { if (all) S.sel.delete(c.id); else S.sel.add(c.id); }); render();
+  },
+  'clear-sel': function () { S.sel.clear(); render(); },
+  more: function () { S.limit += 150; render(); },
+  fchip: function (el) {
+    var a = S.f[el.dataset.g], v = el.dataset.v, i = a.indexOf(v);
+    if (i >= 0) a.splice(i, 1); else a.push(v); S.limit = 150; render();
+  },
+  'rm-filter': function (el) {
+    var g = el.dataset.g;
+    if (g === 'roles' || g === 'academies') S.f[g] = S.f[g].filter(function (x) { return x !== el.dataset.v; });
+    else S.f[g] = g === 'status' ? 'Active' : '';
+    render();
+  },
+  'clear-filters': function () { var sort = S.f.sort; S.f = defaultFilters(); S.f.sort = sort; S.limit = 150; render(); },
+  'toggle-filters': function () { S.filtersOpen = !S.filtersOpen; render(); },
+  menu: function () { S.menu = !S.menu; render(); },
+  refresh: function () { S.menu = false; reload(false); },
+  signout: function () { Auth.clear(); location.hash = ''; location.reload(); },
+  'view-as': function () { S.viewAs = S.viewAs ? '' : 'staff'; S.menu = false; render(); renderLayer(); toast(S.viewAs ? 'Previewing what view-only staff see' : 'Back to admin view'); },
+  'exit-demo': function () { location.href = location.pathname; },
+  copy: function (el) { copyText(el.dataset.text); },
+  'copy-emails': function () {
+    var list = S.sel.size ? Array.from(S.sel).map(function (id) { return IX.byId.get(id); }).filter(Boolean) : filterContacts();
+    var emails = uniq([].concat.apply([], list.map(function (c) { return c._em.slice(0, 1); })));
+    var missing = list.filter(function (c) { return !c._em.length; }).length;
+    var dnc = list.filter(function (c) { return c.status === 'Do Not Contact'; }).length;
+    if (!emails.length) return toast('No one in this list has an email address.', { err: true });
+    copyText(emails.join(', '), 'Copied ' + plural(emails.length, 'email') + ' (paste into BCC)' + (missing ? '. ' + missing + ' had no email.' : '') + (dnc ? ' Includes ' + dnc + ' marked Do Not Contact!' : ''));
+  },
+  'export-contacts': function () {
+    var list = S.sel.size ? Array.from(S.sel).map(function (id) { return IX.byId.get(id); }).filter(Boolean) : filterContacts();
+    var head = ['ID', 'Status', 'Title', 'First Name', 'Last Name', 'Profession', 'Company', 'Email', 'Phone', 'Location', 'LinkedIn', 'Academies', 'Roles', 'Availability', 'Relationship', 'Piper Staff Contact', 'Last Positive Contact', 'Raptor Cleared', 'Notes'];
+    var keys = ['id', 'status', 'title', 'first', 'last', 'profession', 'company', 'email', 'phone', 'location', 'linkedin', 'academies', 'roles', 'availability', 'relationship', 'staff', 'lastContact', 'raptor', 'notes'];
+    downloadFile('piper-partners-' + todayIso() + '.csv', toCsv([head].concat(list.map(function (c) { return keys.map(function (k) { return c[k]; }); }))));
+  },
+  'export-activity': function () {
+    var rows = S.d.engagements.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); }).map(function (e) {
+      var c = IX.byId.get(e.contactId);
+      return [e.date, schoolYear(e.date), c ? displayName(c) : e.contactName, c ? c.company : '', e.activity, e.academy, e.staff, e.notes, e.loggedBy];
+    });
+    downloadFile('piper-participation-' + todayIso() + '.csv', toCsv([['Date', 'School Year', 'Partner', 'Company', 'Activity', 'Academy', 'Piper Staff', 'Notes', 'Logged By']].concat(rows)));
+  },
+  'export-px': function () {
+    downloadFile('piper-partnerships-' + todayIso() + '.csv', toCsv([['Company', 'Type', 'Partner', 'Email', 'Phone', 'Academy', 'Status', 'School Year', 'Notes']].concat(S.d.partnerships.map(function (x) {
+      var c = IX.byId.get(x.contactId); return [x.company, x.type, c ? displayName(c) : x.partnerName, x.email, x.phone, x.academy, x.status, x.schoolYear, x.notes];
+    }))));
+  },
+  'add-contact': function () { openModal({ type: 'contact', draft: {} }); },
+  'edit-contact': function (el) { openModal({ type: 'contact', id: el.dataset.id }); },
+  'conflict-load': function () {
+    if (!S.conflict) return; upsert(S.d.contacts, S.conflict); S.conflict = null; reindex(); render();
+    openModal({ type: 'contact', id: S.modal.id }); toast('Loaded the latest version. Make your change again.');
+  },
+  'delete-contact': function (el) {
+    var c = IX.byId.get(el.dataset.id), n = (IX.eng.get(c.id) || []).length;
+    confirmThen({
+      title: 'Delete ' + displayName(c) + '?', danger: true, label: 'Delete',
+      body: html`This removes them from the directory and the sheet${n ? html` along with <b>${plural(n, 'participation record')}</b>` : ''}. This cannot be undone.<br><br><span class="small muted">Tip: to keep their history but stop contacting them, edit them and set Status to "Inactive" or "Do Not Contact" instead.</span>`,
+      onYes: function () {
+        return Backend.call('deleteContact', { id: c.id }).then(function (r) {
+          S.d.contacts = S.d.contacts.filter(function (x) { return x.id !== r.id; });
+          S.d.engagements = S.d.engagements.filter(function (x) { return r.engagementIds.indexOf(x.id) < 0; });
+          S.d.partnerships.forEach(function (x) { if (x.contactId === r.id) x.contactId = ''; });
+          S.drawer = null; S.modal = null; history.replaceState(null, '', '#' + S.view); afterChange(); toast('Deleted ' + displayName(c));
+        });
+      }
+    });
+  },
+  'm-yes': function (el) {
+    var m = S.modal; el.disabled = true; el.textContent = 'Working…';
+    Promise.resolve().then(m.onYes).catch(function (e) { closeModal(); toast(e.message, { err: true }); });
+  },
+  'log-one': function (el) { openModal({ type: 'log', ids: [el.dataset.id] }); },
+  'log-selected': function () { openModal({ type: 'log', ids: Array.from(S.sel) }); },
+  'log-new': function () { openModal({ type: 'log', ids: [] }); },
+  'log-rm': function (el) { S.modal.ids = S.modal.ids.filter(function (x) { return x !== el.dataset.id; }); refreshLogWho(); },
+  'bulk-edit': function () { openModal({ type: 'bulk' }); },
+  'del-eng': function (el) {
+    var e = S.d.engagements.filter(function (x) { return x.id === el.dataset.id; })[0];
+    confirmThen({
+      title: 'Delete this participation record?', danger: true, label: 'Delete',
+      body: html`<b>${e.contactName}</b>: ${e.activity} on ${fmtDate(e.date)}. Their "last positive contact" date is not changed.`,
+      onYes: function () {
+        return Backend.call('deleteEngagement', { id: e.id }).then(function () {
+          S.d.engagements = S.d.engagements.filter(function (x) { return x.id !== e.id; }); S.modal = null; afterChange(); toast('Deleted');
+        });
+      }
+    });
+  },
+  'px-new': function () { openModal({ type: 'px' }); },
+  'px-edit': function (el) { openModal({ type: 'px', id: el.dataset.id }); },
+  'px-delete': function (el) {
+    var x = S.d.partnerships.filter(function (p) { return p.id === el.dataset.id; })[0];
+    confirmThen({
+      title: 'Delete ' + x.company + '?', danger: true, label: 'Delete', body: 'Tip: set Status to "Past" instead to keep a record of it.',
+      onYes: function () {
+        return Backend.call('deletePartnership', { id: x.id }).then(function () {
+          S.d.partnerships = S.d.partnerships.filter(function (p) { return p.id !== x.id; }); S.modal = null; afterChange(); toast('Deleted');
+        });
+      }
+    });
+  },
+  'pend-tab': function (el) { S.pendTab = el.dataset.v; render(); },
+  'pend-approve': function (el) {
+    var s = S.d.submissions.filter(function (x) { return x.id === el.dataset.id; })[0];
+    var draft = Object.assign({}, s, { id: '', status: 'Active', staff: [], notes: s.message ? 'From partner form: ' + s.message : '' });
+    if (s.staffKnown) draft.notes = (draft.notes ? draft.notes + ' ' : '') + '(Knows: ' + s.staffKnown + ')';
+    openModal({ type: 'contact', draft: draft, sub: s.id });
+  },
+  'pend-merge': function (el) { openModal({ type: 'pendMerge', sid: el.dataset.id, cid: el.dataset.cid }); },
+  'pend-reject': function (el) {
+    var s = S.d.submissions.filter(function (x) { return x.id === el.dataset.id; })[0];
+    confirmThen({
+      title: 'Reject ' + s.first + ' ' + s.last + '?', label: 'Reject', danger: true,
+      body: 'Use this for spam or test entries. It stays on the Submissions tab in the sheet marked "Rejected".',
+      onYes: function () { return Backend.call('reviewSubmission', { id: s.id, decision: 'reject' }).then(function (r) { upsert(S.d.submissions, r.submission); S.modal = null; afterChange(); toast('Rejected'); }); }
+    });
+  },
+  'health-filter': function (el) {
+    var v = el.dataset.v; S.f = defaultFilters();
+    if (v === 'stale' || v === 'never') S.f.last = v; else S.f.missing = v;
+    location.hash = '#directory';
+  },
+  'dupe-ignore': function (el) {
+    var s = L(), cfg = { IGNORED_DUPES: uniq(String(s.config.IGNORED_DUPES || '').split(/[\s,;]+/).concat([el.dataset.v])).join(',') };
+    Backend.call('saveSettings', { roles: s.roles, academies: s.academies, relationships: s.relationships, staff: s.staff, admins: s.admins || [], config: cfg })
+      .then(function (r) { S.d.settings = r.settings; render(); toast('Marked as not a duplicate'); }, function (e) { toast(e.message, { err: true }); });
+  },
+  'dupe-merge': function (el) { openModal({ type: 'merge', a: el.dataset.a, b: el.dataset.b }); },
+  'set-add': function (el) {
+    var tb = document.querySelector(el.dataset.v === 'role' ? '#set-roles tbody' : '#set-acads tbody');
+    tb.insertAdjacentHTML('beforeend', (el.dataset.v === 'role' ? roleRow() : acadRow()).s);
+    tb.lastElementChild.querySelector('input').focus();
+  },
+  'set-rm': function (el) { el.closest('tr').remove(); },
+  'signout-all': function () {
+    confirmThen({
+      title: 'Sign everyone out?', danger: true, label: 'Sign everyone out',
+      body: 'Everyone using the GitHub version (including you) will need to sign in again. Use this if a laptop is lost or someone leaves Piper.',
+      onYes: function () { return Backend.call('signOutEveryone').then(function () { closeModal(); toast('Done. Everyone must sign in again.'); }); }
+    });
+  },
+  'qr-png': function () {
+    try {
+      var q = qrcode(0, 'M'); q.addData(publicFormUrl()); q.make();
+      var img = new Image();
+      img.onload = function () {
+        var cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+        var cx = cv.getContext('2d'); cx.imageSmoothingEnabled = false; cx.drawImage(img, 0, 0);
+        var a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = 'piper-partner-form-qr.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      };
+      img.src = q.createDataURL(12, 4);
+    } catch (e) { toast('Could not make the image: ' + e.message, { err: true }); }
+  },
+  'print-flyer': function () {
+    var url = publicFormUrl(), c = L().config;
+    put(document.getElementById('flyer'), html`<h1>${c.FORM_TITLE || 'Partner with Piper'}</h1>
+      <p style="font-size:22px;max-width:640px;margin:0 auto">Help ${c.SCHOOL_NAME || 'Piper High School'} students explore careers: interviews, capstone evaluations, mock interviews, internships.</p>
+      <div class="qrbig">${qrSvg(url)}</div><p style="font-size:20px"><b>Scan with your phone camera</b></p><p style="font-size:14px;color:#555">${url}</p>`);
+    document.body.classList.add('printing');
+    setTimeout(function () { window.print(); document.body.classList.remove('printing'); }, 50);
+  },
+  'join-again': function () { PUB.done = null; PUB.start = Date.now(); renderJoinForm(); }
+};
+
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]');
+  if (S.menu && !e.target.closest('.menu') && !(el && el.dataset.act === 'menu')) { S.menu = false; render(); }
+  if (!el) return;
+  var fn = ACT[el.dataset.act];
+  if (!fn) return;
+  if (el.tagName === 'A' && el.dataset.act === 'close-modal') { closeModal(); return; } // let the link navigate
+  if (el.tagName !== 'INPUT') e.preventDefault();
+  fn(el, e);
+});
+
+/* ================================================================ inputs */
+var renderSoon = debounce(function () { render(); }, 140);
+function setPath(path, v) { var p = path.split('.'); S[p[0]][p[1]] = v; }
+function onInput(e) {
+  var el = e.target, key = el.dataset && el.dataset.in;
+  if (!key) return;
+  if (key === 'dupe') {
+    var form = el.form, c = readContactForm(form);
+    put(document.getElementById('dupe-box'), dupeBox(c, S.modal && S.modal.id));
+    return;
+  }
+  if (key === 'log-add') {
+    var id = idFromLabel(el.value);
+    if (id && IX.byId.has(id)) { if (S.modal.ids.indexOf(id) < 0) S.modal.ids.push(id); el.value = ''; refreshLogWho(); }
+    return;
+  }
+  if (key === 'log-activity') { document.getElementById('log-other-wrap').classList.toggle('hide', el.value !== '__other'); return; }
+  if (key === 'px-contact') {
+    var c2 = IX.byId.get(idFromLabel(el.value)); if (!c2) return;
+    var f = el.form;
+    if (!f.elements.partnerName.value) f.elements.partnerName.value = fullName(c2);
+    if (!f.elements.email.value) f.elements.email.value = c2.email;
+    if (!f.elements.phone.value) f.elements.phone.value = c2.phone;
+    if (!f.elements.company.value) f.elements.company.value = c2.company;
+    return;
+  }
+  if (key.indexOf('.') > 0) {
+    setPath(key, el.value); S.limit = 150;
+    if (el.tagName === 'SELECT') render(); else renderSoon();
+  }
+}
+document.addEventListener('input', function (e) { if (e.target.tagName !== 'SELECT') onInput(e); });
+document.addEventListener('change', function (e) { if (e.target.tagName === 'SELECT' || e.target.dataset.in === 'log-add' || e.target.dataset.in === 'px-contact') onInput(e); });
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    if (S.modal) { closeModal(); e.preventDefault(); }
+    else if (S.drawer) { ACT['close-drawer'](); e.preventDefault(); }
+    else if (S.menu) { S.menu = false; render(); }
+  }
+  if (e.key === '/' && !S.modal && S.d && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+    var q = document.getElementById(S.view === 'activity' ? 'act-q' : S.view === 'partnerships' ? 'px-q' : 'q');
+    if (q) { e.preventDefault(); q.focus(); }
+  }
+});
+
+/* ================================================================ form submits */
+var FORMS = {
+  contact: function (form) {
+    var m = S.modal, c = readContactForm(form);
+    if (!c.first && !c.last && !c.email && !c.company) return handleErr(new Error('Add at least a name, email, or company.'), form);
+    if (c.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) return handleErr(new Error('That email address does not look right.'), form);
+    return saving(form, function () {
+      if (m.sub) {
+        return Backend.call('reviewSubmission', { id: m.sub, decision: 'approve', contact: c }).then(function (r) {
+          upsert(S.d.submissions, r.submission); upsert(S.d.contacts, r.contact);
+          S.modal = null; afterChange(); toast('Added ' + displayName(r.contact) + ' to the directory');
+        });
+      }
+      var cur = m.id ? IX.byId.get(m.id) : null;
+      if (cur) c.id = cur.id;
+      return Backend.call('saveContact', { contact: c, expectedUpdated: cur ? cur.updated : '' }).then(function (r) {
+        upsert(S.d.contacts, r.contact);
+        S.modal = null; S.drawer = r.contact.id; history.replaceState(null, '', '#c/' + r.contact.id);
+        afterChange(); toast(r.unchanged ? 'No changes' : cur ? 'Saved' : 'Added ' + displayName(r.contact));
+      });
+    });
+  },
+  log: function (form) {
+    var m = S.modal, g = function (n) { return String(form.elements[n].value || '').trim(); };
+    var activity = g('activity') === '__other' ? g('activityOther') : g('activity');
+    if (!m.ids.length) return handleErr(new Error('Add at least one person.'), form);
+    if (!activity) return handleErr(new Error('Describe what they did.'), form);
+    var entries = m.ids.map(function (id) { return { contactId: id, date: g('date'), activity: activity, academy: g('academy'), staff: g('staff'), notes: g('notes') }; });
+    return saving(form, function () {
+      return Backend.call('logEngagements', { entries: entries }).then(function (r) {
+        S.d.engagements = S.d.engagements.concat(r.engagements);
+        r.contacts.forEach(function (c) { upsert(S.d.contacts, c); });
+        S.modal = null; S.sel.clear(); afterChange(); toast('Logged ' + plural(r.engagements.length, 'record'));
+      });
+    });
+  },
+  bulk: function (form) {
+    var all = function (n) { return Array.prototype.map.call(form.querySelectorAll('input[name="' + n + '"]:checked'), function (i) { return i.value; }); };
+    var ch = { addRoles: all('addRoles'), removeRoles: all('removeRoles'), addAcademies: all('addAcademies'), removeAcademies: all('removeAcademies'),
+      addStaff: all('addStaff'), status: form.elements.status.value, relationship: form.elements.relationship.value };
+    return saving(form, function () {
+      return Backend.call('bulkUpdateContacts', { ids: Array.from(S.sel), changes: ch }).then(function (r) {
+        r.contacts.forEach(function (c) { upsert(S.d.contacts, c); });
+        S.modal = null; afterChange(); toast('Updated ' + plural(r.contacts.length, 'person', 'people'));
+      });
+    });
+  },
+  merge: function (form) {
+    var m = S.modal, keep = form.querySelector('input[name=keep]:checked').value, drop = keep === m.a ? m.b : m.a;
+    return saving(form, function () {
+      return Backend.call('mergeContacts', { keepId: keep, removeId: drop }).then(function (r) {
+        S.d.contacts = S.d.contacts.filter(function (c) { return c.id !== r.removedId; });
+        upsert(S.d.contacts, r.contact);
+        ['engagements', 'partnerships', 'submissions'].forEach(function (t) { S.d[t].forEach(function (x) { if (x.contactId === r.removedId) x.contactId = r.contact.id; }); });
+        S.modal = null; afterChange(); toast('Merged into ' + displayName(r.contact));
+      });
+    });
+  },
+  'pend-merge': function (form) {
+    var m = S.modal;
+    return saving(form, function () {
+      return Backend.call('reviewSubmission', { id: m.sid, decision: 'merge', contactId: m.cid, preferNew: form.elements.preferNew.checked }).then(function (r) {
+        upsert(S.d.submissions, r.submission); upsert(S.d.contacts, r.contact);
+        S.modal = null; afterChange(); toast('Merged into ' + displayName(r.contact));
+      });
+    });
+  },
+  px: function (form) {
+    var g = function (n) { return String(form.elements[n].value || '').trim(); };
+    var x = { id: S.modal.id || '', company: g('company'), type: g('type'), contactId: idFromLabel(g('contact')), partnerName: g('partnerName'),
+      email: g('email'), phone: g('phone'), academy: g('academy'), schoolYear: g('schoolYear'), status: g('status'), notes: g('notes') };
+    if (!x.company) return handleErr(new Error('Company is required.'), form);
+    if (g('contact') && !x.contactId) return handleErr(new Error('Pick the person from the list, or clear that box.'), form);
+    return saving(form, function () {
+      return Backend.call('savePartnership', { partnership: x }).then(function (r) {
+        upsert(S.d.partnerships, r.partnership); S.modal = null; afterChange(); toast('Saved ' + r.partnership.company);
+      });
+    });
+  },
+  settings: function (form) {
+    var roles = [], acads = [], renames = { roles: {}, academies: {} };
+    Array.prototype.forEach.call(form.querySelectorAll('#set-roles tr'), function (tr) {
+      var name = tr.querySelector('[name=role-name]').value.trim(); if (!name) return;
+      roles.push({ name: name, description: tr.querySelector('[name=role-desc]').value.trim(), showOnForm: tr.querySelector('[name=role-show]').checked });
+      var o = tr.dataset.orig; if (o && o !== name) renames.roles[o] = name;
+    });
+    Array.prototype.forEach.call(form.querySelectorAll('#set-acads tr'), function (tr) {
+      var name = tr.querySelector('[name=acad-name]').value.trim(); if (!name) return;
+      acads.push({ name: name, description: tr.querySelector('[name=acad-desc]').value.trim() });
+      var o = tr.dataset.orig; if (o && o !== name) renames.academies[o] = name;
+    });
+    var lines = function (n) { return uniq(form.elements[n].value.split(/\n+/).map(function (x) { return x.trim(); })); };
+    var cfg = {};
+    Array.prototype.forEach.call(form.querySelectorAll('[name^="cfg:"]'), function (el) { cfg[el.name.slice(4)] = el.value.trim(); });
+    if (!roles.length || !acads.length) return toast('Keep at least one role and one academy.', { err: true });
+    var btn = form.querySelector('[type=submit]'); btn.disabled = true;
+    Backend.call('saveSettings', { roles: roles, academies: acads, relationships: lines('relationships'), staff: lines('staff'), admins: lines('admins'), config: cfg, renames: renames })
+      .then(function (r) {
+        S.d.settings = r.settings;
+        if (MODE === 'demo' || r.renamedContacts) return Backend.call('bootstrap').then(applyBootstrap);
+      })
+      .then(function () { reindex(); render(); toast('Settings saved'); }, function (e) { btn.disabled = false; handleErr(e); });
+  },
+  join: function (form) { submitJoin(form); }
+};
+document.addEventListener('submit', function (e) {
+  var f = e.target, fn = f.dataset && FORMS[f.dataset.form];
+  if (!fn) return;
+  e.preventDefault(); fn(f);
+});
+
+/* ================================================================ boot */
+function route() {
+  var h = location.hash.replace(/^#/, ''), m = /^c\/([A-Za-z0-9]+)/.exec(h);
+  if (m) { S.drawer = m[1]; if (VIEWS.indexOf(S.view) < 0) S.view = 'directory'; }
+  else { S.view = VIEWS.indexOf(h) >= 0 ? h : 'directory'; S.drawer = null; }
+  S.menu = false;
+  document.title = { directory: 'Directory', activity: 'Participation', partnerships: 'Partnerships', pending: 'Pending', health: 'Data health', settings: 'Settings', share: 'Partner form' }[S.view] + ' · Piper Industry Partners';
+}
+window.addEventListener('hashchange', function () {
+  if (!S.d || PUB.cfg) return;
+  var wasView = S.view; route();
+  if (S.modal) S.modal = null;
+  render(); renderLayer();
+  if (wasView !== S.view) window.scrollTo(0, 0);
+});
+function applyBootstrap(d) {
+  if (MODE !== 'demo') store.set(CACHE_KEY, { d: d, at: Date.now(), who: d.me.email });
+  S.d = d; S.loadedAt = Date.now(); reindex();
+}
+function reload(silent) {
+  S.refreshing = true; if (!silent) render();
+  return Backend.call('bootstrap').then(function (d) { applyBootstrap(d); if (!silent) toast('Up to date'); },
+    function (e) { handleErr(e); })
+    .then(function () { S.refreshing = false; if (S.d) { render(); if (!S.modal) renderLayer(); } });
+}
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible' && S.d && !S.modal && !PUB.cfg && Date.now() - S.loadedAt > 5 * 60e3) reload(true);
+});
+function startStaff() {
+  if (MODE === 'setup') return renderSetup();
+  if (MODE === 'web') { Auth.capture(); if (!Auth.token()) return renderSignIn(); }
+  var cached = MODE !== 'demo' ? store.get(CACHE_KEY) : null;
+  var who = MODE === 'web' ? Auth.who() : null;
+  if (cached && cached.d && (!who || cached.who === who)) {
+    S.d = cached.d; reindex(); route(); S.refreshing = true; render(); renderLayer();
+  } else renderLoading();
+  Backend.call('bootstrap').then(function (d) {
+    applyBootstrap(d); S.refreshing = false; route(); render(); renderLayer();
+  }, function (e) {
+    S.refreshing = false;
+    if (e.code === 'AUTH' || e.code === 'FORBIDDEN') {
+      if (MODE === 'web') { Auth.clear(); S.d = null; return renderSignIn(e.message); }
+      S.d = null; return centerCard(html`<h1 style="font-size:22px">Piper staff only</h1><div class="errbox" style="text-align:left">${e.message}</div>
+        <p class="small muted">Partners: please use the partner form link you were sent.</p>`);
+    }
+    if (S.d) { render(); toast('Could not refresh: ' + e.message, { err: true }); } else renderError(e);
+  });
+}
+function start() {
+  if (MODE === 'gas') {
+    google.script.url.getLocation(function (loc) {
+      var p = (loc && loc.parameter) || {};
+      if (p.page === 'join') loadJoin(); else startStaff();
+    });
+    return;
+  }
+  if (QS.get('page') === 'join') loadJoin(); else startStaff();
+}
+start();
+window.__piper = { S: S, MODE: MODE, Backend: Backend };
+})();
+
+</script>
+</body>
+</html>
