@@ -11,7 +11,7 @@
  * First time: run setup() once from the editor (Run > setup).
  */
 
-var APP_VERSION = '1.1.0';
+var APP_VERSION = '1.2.0';
 var SEP = '; ';
 var TOKEN_DAYS = 14;
 var STATUSES = ['Active', 'Inactive', 'Do Not Contact'];
@@ -501,6 +501,20 @@ function saveContact_(p, user) {
       log_(user.email, 'add', rec.id, displayName_(rec));
     } else {
       rec = findById_(t, p.contact.id);
+      // Records being combined into this one (chosen in the edit box). Check them before touching anything.
+      var drops = uniq_(p.mergeIds || []).filter(function (id) { return id && id !== rec.id; }).map(function (id) { return findById_(t, id); });
+      drops.forEach(function (d) {
+        var seen = p.mergeExpect && p.mergeExpect[d.id];
+        if (seen && String(d.updated) !== String(seen)) {
+          throw err_('CONFLICT', displayName_(d) + ' (' + d.id + ') was changed by ' + (d.updatedBy || 'someone') +
+            ' while you were combining. Nothing was saved. Close this box, then open it again to combine.');
+        }
+      });
+      var subT = null, sub = null;
+      if (p.submissionId) {
+        subT = readTable_('submissions'); sub = findById_(subT, p.submissionId);
+        if (sub.status && sub.status !== 'Pending') throw err_('CONFLICT', 'This form submission was already ' + sub.status.toLowerCase() + ' by ' + (sub.reviewedBy || 'someone') + '.');
+      }
       // Field-level check: only refuse if someone else changed the SAME field since this person opened the form.
       var orig = p.original ? normalizeContact_(p.original, s) : null;
       var changed = [], conflicts = [];
@@ -515,10 +529,23 @@ function saveContact_(p, user) {
           '). Nothing was saved. Load their version, then make your change again.', clean_(rec));
       }
       changed.forEach(function (k) { rec[k] = input[k]; });
-      if (!changed.length) return { contact: clean_(rec), unchanged: true };
+      if (!changed.length && !drops.length && !sub) return { contact: clean_(rec), unchanged: true };
       rec.updated = now_(); rec.updatedBy = user.email;
       writeRecord_(t, rec);
-      log_(user.email, 'edit', rec.id, displayName_(rec) + ': ' + changed.join(', '));
+      if (changed.length) log_(user.email, 'edit', rec.id, displayName_(rec) + ': ' + changed.join(', '));
+      var removed = [];
+      drops.forEach(function (d) {
+        moveLinks_(d.id, rec);
+        removed.push(d.id);
+        log_(user.email, 'merge', rec.id, 'Combined ' + d.id + ' (' + displayName_(d) + ') into ' + rec.id + ' from the edit box');
+      });
+      if (removed.length) deleteRecords_(readTable_('contacts'), removed.map(function (id) { return { id: id }; }));
+      if (sub) {
+        sub.status = 'Merged'; sub.reviewedBy = user.email; sub.reviewedAt = now_(); sub.contactId = rec.id;
+        writeRecord_(subT, sub);
+        log_(user.email, 'review-merge', sub.id, sub.first + ' ' + sub.last + ' -> ' + rec.id);
+      }
+      return { contact: clean_(rec), removedIds: removed, submission: sub ? clean_(sub) : null };
     }
     return { contact: clean_(rec) };
   } finally { lock.releaseLock(); }
@@ -591,21 +618,27 @@ function mergeContacts_(p, user) {
     }
     keep.updated = now_(); keep.updatedBy = user.email;
     writeRecord_(t, keep);
-    var moved = { engagements: [], partnerships: [], submissions: [] };
-    ['engagements', 'partnerships', 'submissions'].forEach(function (key) {
-      var x = readTable_(key);
-      x.rows.forEach(function (r) {
-        if (r.contactId === drop.id) {
-          r.contactId = keep.id;
-          if (key === 'engagements') r.contactName = displayName_(keep);
-          writeRecord_(x, r); moved[key].push(r.id);
-        }
-      });
-    });
+    var moved = moveLinks_(drop.id, keep);
     deleteRecords_(readTable_('contacts'), [{ id: drop.id }]);
     log_(user.email, 'merge', keep.id, 'Merged ' + drop.id + ' (' + displayName_(drop) + ') into ' + keep.id);
     return { contact: clean_(keep), removedId: drop.id, moved: moved };
   } finally { lock.releaseLock(); }
+}
+
+/** Points participation, partnerships, and form submissions at a different person. */
+function moveLinks_(fromId, keep) {
+  var moved = { engagements: [], partnerships: [], submissions: [] };
+  ['engagements', 'partnerships', 'submissions'].forEach(function (key) {
+    var x = readTable_(key);
+    x.rows.forEach(function (r) {
+      if (r.contactId === fromId) {
+        r.contactId = keep.id;
+        if (key === 'engagements') r.contactName = displayName_(keep);
+        writeRecord_(x, r); moved[key].push(r.id);
+      }
+    });
+  });
+  return moved;
 }
 
 /* ================================================================== engagements */

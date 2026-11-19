@@ -17,9 +17,9 @@
 // Fallback only. Prefer config.js; anything filled in there wins.
 window.PIPER_CONFIG = {
   // "Public" Apps Script deployment URL (Who has access: Anyone). Ends in /exec
-  API_URL: 'https://script.google.com/macros/s/AKfycbzLcVPe39nnGusHeCWcU0p3HZvAgrtCCC5qakNiT-o88ykDYVSitUJvgMAr7IZ98C0siQ/exec',
+  API_URL: '',
   // "Staff" Apps Script deployment URL (Who has access: Anyone within piperschools.us). Ends in /exec
-  STAFF_URL: 'https://script.google.com/a/macros/piperschools.us/s/AKfycbxRXbtlCKQivRHIlQlnLavtMGymLl1YZPrY_Gh1aMvYacp8czaIz3PWk-ntwUHZvFeNfw/exec',
+  STAFF_URL: '',
   // Optional: link to a logo image (PNG/SVG). Leave blank to use the built-in Piper "P" mark.
   LOGO_URL: ''
 };
@@ -101,7 +101,7 @@ main{max-width:1320px;margin:0 auto;padding:20px}
 .btn.sm{padding:5px 10px;min-height:32px;font-size:13px;border-radius:8px}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
 .icon{width:16px;height:16px;flex:none}
-.field{display:grid;gap:5px}
+.field{display:grid;gap:5px;align-content:start}
 .field>span,.label{font-size:13px;font-weight:600;color:var(--ink-2)}
 .field small{color:var(--muted);font-size:12px}
 .input,select.input,textarea.input{width:100%;border:1px solid var(--line-2);border-radius:10px;background:#fff;padding:9px 12px;min-height:40px}
@@ -193,11 +193,19 @@ label.chip:has(input:focus-visible){outline:3px solid var(--focus);outline-offse
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
 .grid3{display:grid;grid-template-columns:100px 1fr 1fr;gap:12px 14px}
 .span2{grid-column:1/-1}
+.mergebox{display:flex;gap:10px;align-items:flex-start;background:var(--piper-50);border:1px solid var(--piper-200);color:var(--piper-900);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:12px;line-height:1.45}
+.mergebox>.icon{margin-top:3px;color:var(--piper)}
+.input.merged{background:#fffaeb;border-color:#efc76a}
+.alt{font-size:12.5px;color:var(--ink-2);background:#f4f2f8;border-radius:6px;padding:4px 8px;margin-top:4px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;word-break:break-word}
+.linkbtn{background:none;border:0;padding:0;margin-left:auto;color:var(--piper);font-weight:600;text-decoration:underline;cursor:pointer;font-size:12.5px}
+.warnbox.dupes{display:grid;gap:8px}
+.dupe-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid #f3d29a;border-radius:8px;padding:8px 10px;color:var(--ink)}
 .warnbox{background:var(--warn-bg);border:1px solid #f3d29a;color:#5d3a00;border-radius:10px;padding:10px 12px;font-size:14px}
 .errbox{background:var(--danger-bg);border:1px solid #f3c3bf;color:var(--danger);border-radius:10px;padding:10px 12px;font-size:14px}
 .okbox{background:var(--ok-bg);border:1px solid #bfe3cf;color:#0f5434;border-radius:10px;padding:10px 12px;font-size:14px}
 .x{background:none;border:0;cursor:pointer;border-radius:8px;padding:6px;color:var(--muted);display:grid;place-items:center}
 .x:hover{background:var(--piper-50);color:var(--ink)}
+.still{animation:none!important}
 @keyframes fade{from{opacity:0}} @keyframes slide{from{transform:translateX(30px);opacity:.4}} @keyframes pop{from{transform:scale(.98);opacity:.4}}
 
 /* ---------- other pages */
@@ -661,7 +669,15 @@ var Demo = (function () {
       }
       rec.email = String(rec.email || '').toLowerCase();
       rec.updated = now(); rec.updatedBy = ME.email;
-      return { contact: rec };
+      var removed = (p.mergeIds || []).filter(function (id) { return id !== rec.id; });
+      removed.forEach(function (rid) {
+        find(db.contacts, rid);
+        ['engagements', 'partnerships', 'submissions'].forEach(function (t) { db[t].forEach(function (r) { if (r.contactId === rid) r.contactId = rec.id; }); });
+        db.contacts = db.contacts.filter(function (x) { return x.id !== rid; });
+      });
+      var sub = null;
+      if (p.submissionId) { sub = find(db.submissions, p.submissionId); sub.status = 'Merged'; sub.reviewedBy = ME.email; sub.reviewedAt = now(); sub.contactId = rec.id; }
+      return { contact: rec, removedIds: removed, submission: sub };
     },
     deleteContact: function (p) {
       var rec = find(db.contacts, p.id);
@@ -849,12 +865,13 @@ function activeFilterCount() {
 
 /* ---------------------------------------------------------------- duplicates */
 function nameKey(c) { return norm((c.first || '') + ' ' + (c.last || '')).replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim(); }
-function findMatches(c, excludeId) {
+function findMatches(c, exclude) {
+  var skip = Array.isArray(exclude) ? exclude : [exclude];
   var em = String(c.email || '').trim().toLowerCase(), ph = digits(c.phone).slice(-10), nk = nameKey(c);
   var last = norm(c.last), fi = norm(c.first)[0], co = norm(c.company).slice(0, 5);
   var out = [];
   S.d.contacts.forEach(function (o) {
-    if (o.id === excludeId) return;
+    if (skip.indexOf(o.id) >= 0) return;
     var why = [];
     if (em && o._em.indexOf(em) >= 0) why.push('same email');
     if (ph.length >= 10 && o._ph.indexOf(ph) >= 0) why.push('same phone');
@@ -935,7 +952,13 @@ function renderLayer() {
   var open = !!((S.drawer && IX.byId.get(S.drawer)) || S.modal);
   document.body.style.overflow = open ? 'hidden' : '';
   var db = $layer.querySelector('.drawer-body'), keep = db ? db.scrollTop : 0;
+  // Only animate a panel or box the first time it appears, not every time it is redrawn.
+  var sameDrawer = !!$layer.querySelector('.drawer') && renderLayer.lastDrawer === S.drawer;
+  var sameModal = !!$layer.querySelector('.modal') && renderLayer.lastModal === S.modal;
   put($layer, html`${S.drawer ? drawerHtml() : ''}${S.modal ? modalHtml() : ''}`);
+  if (sameDrawer) Array.prototype.forEach.call($layer.querySelectorAll('.drawer, :scope > .scrim'), function (el) { el.classList.add('still'); });
+  if (sameModal) Array.prototype.forEach.call($layer.querySelectorAll('.modal-card, .modal > .scrim'), function (el) { el.classList.add('still'); });
+  renderLayer.lastDrawer = S.drawer; renderLayer.lastModal = S.modal;
   var db2 = $layer.querySelector('.drawer-body'); if (db2 && keep) db2.scrollTop = keep;
 }
 
@@ -1362,52 +1385,82 @@ function idFromLabel(v) { var m = /\(([A-Z]\d{3,})\)\s*$/.exec(v || ''); return 
 var MODALS = {};
 
 /* ---------- add / edit / approve contact */
+var MERGE_FIELDS = [['title', 'Title'], ['first', 'First name'], ['last', 'Last name'], ['profession', 'Job'], ['company', 'Company'],
+  ['email', 'Email'], ['phone', 'Phone'], ['location', 'City'], ['linkedin', 'LinkedIn'], ['relationship', 'Relationship'],
+  ['availability', 'Availability'], ['status', 'Status']];
+function fieldLabel(k) { var f = MERGE_FIELDS.filter(function (x) { return x[0] === k; })[0]; return f ? f[1].toLowerCase() : k; }
+
 MODALS.contact = function (m) {
-  var c = m.snap || (m.id ? IX.byId.get(m.id) : (m.draft || {}));
+  var c = m.values || m.snap || (m.id ? IX.byId.get(m.id) : (m.draft || {}));
   c = Object.assign({ roles: [], academies: [], staff: [], status: 'Active' }, c);
-  var s = L();
+  var s = L(), alts = m.alts || {}, filled = m.filled || [];
   var staffAll = uniq(s.staff.concat(c.staff)).sort();
-  var title = m.sub ? 'Add ' + [c.first, c.last].join(' ') + ' to the directory' : m.id ? 'Edit ' + displayName(c) : 'Add a partner';
+  var who = m.snap ? displayName(m.snap) : '', nMerge = (m.mergeIds || []).length;
+  var title = m.switchedTo ? (m.sub ? 'Add the form answers to ' + who : 'Update ' + who)
+    : m.sub ? 'Add ' + [c.first, c.last].join(' ') + ' to the directory'
+    : m.id ? 'Edit ' + who + (nMerge ? ' (combining ' + plural(nMerge + 1, 'record') + ')' : '') : 'Add a partner';
+  var cls = function (k) { return 'input' + (filled.indexOf(k) >= 0 ? ' merged' : ''); };
+  var alt = function (k) {
+    var a = alts[k];
+    return a ? html`<div class="alt">${a.label}: <b>${a.value}</b><button type="button" class="linkbtn" data-act="alt-use" data-k="${k}">Use this</button></div>` : '';
+  };
+  var names = (m.mergeIds || []).map(function (id) { return (m.mergeNames || {})[id] + ' (' + id + ')'; }).join(', ');
+  var saveLabel = nMerge ? 'Save & combine' : m.switchedTo ? (m.sub ? 'Add to their record' : 'Update their record') : m.sub ? 'Add to directory' : 'Save';
   return {
     form: 'contact', title: title,
     body: html`
-    ${m.sub ? html`<div class="okbox" style="margin-bottom:12px">From the partner form. Check the details, then save.</div>` : ''}
+    ${m.sub && !m.switchedTo ? html`<div class="okbox" style="margin-bottom:12px">From the partner form. Check the details, then save.</div>` : ''}
+    ${m.switchedTo ? html`<div class="mergebox">${I('merge')}<div class="grow"><b>${who} (${m.switchedTo}) is already in the directory.</b>
+      Saving will update their record instead of adding a duplicate${m.sub ? ', and mark the form submission as merged' : ''}.
+      What you typed is kept. Empty boxes were filled in from their record (highlighted), and anything that differs is shown under its box.</div>
+      ${(m.history || []).length ? html`<button type="button" class="btn sm" data-act="merge-undo">Undo</button>` : ''}</div>` : ''}
+    ${nMerge ? html`<div class="mergebox">${I('merge')}<div class="grow"><b>Combining ${names} into this record.</b>
+      Empty boxes were filled in from ${nMerge === 1 ? 'that record' : 'those records'} (highlighted), and their roles, academies, and notes were added.
+      Anything that differs is shown under its box. When you save, their participation history and partnerships move here and
+      ${nMerge === 1 ? 'the duplicate is' : 'the duplicates are'} removed. Nothing changes until you save.</div>
+      <button type="button" class="btn sm" data-act="merge-undo">Undo</button></div>` : ''}
     <div class="grid3">
-      <label class="field"><span>Title</span><input class="input" name="title" value="${c.title}" placeholder="Dr."></label>
-      <label class="field"><span>First name</span><input class="input" name="first" value="${c.first}" data-in="dupe" autocomplete="off" ${!m.id ? raw('autofocus') : ''}></label>
-      <label class="field"><span>Last name</span><input class="input" name="last" value="${c.last}" data-in="dupe" autocomplete="off"></label>
+      <label class="field"><span>Title</span><input class="${cls('title')}" name="title" value="${c.title}" placeholder="Dr.">${alt('title')}</label>
+      <label class="field"><span>First name</span><input class="${cls('first')}" name="first" value="${c.first}" data-in="dupe" autocomplete="off" ${!m.id ? raw('autofocus') : ''}>${alt('first')}</label>
+      <label class="field"><span>Last name</span><input class="${cls('last')}" name="last" value="${c.last}" data-in="dupe" autocomplete="off">${alt('last')}</label>
     </div>
     <div class="grid2" style="margin-top:12px">
-      <label class="field"><span>Job / profession</span><input class="input" name="profession" value="${c.profession}"></label>
-      <label class="field"><span>Company</span><input class="input" name="company" value="${c.company}" data-in="dupe"></label>
-      <label class="field"><span>Email</span><input class="input" type="email" name="email" value="${c.email}" data-in="dupe" autocomplete="off"></label>
-      <label class="field"><span>Phone</span><input class="input" type="tel" name="phone" value="${c.phone}" data-in="dupe" autocomplete="off"></label>
-      <label class="field"><span>City / area</span><input class="input" name="location" value="${c.location}"></label>
-      <label class="field"><span>LinkedIn</span><input class="input" name="linkedin" value="${c.linkedin}" placeholder="linkedin.com/in/…"></label>
+      <label class="field"><span>Job / profession</span><input class="${cls('profession')}" name="profession" value="${c.profession}">${alt('profession')}</label>
+      <label class="field"><span>Company</span><input class="${cls('company')}" name="company" value="${c.company}" data-in="dupe">${alt('company')}</label>
+      <label class="field"><span>Email</span><input class="${cls('email')}" type="email" name="email" value="${c.email}" data-in="dupe" autocomplete="off">${alt('email')}</label>
+      <label class="field"><span>Phone</span><input class="${cls('phone')}" type="tel" name="phone" value="${c.phone}" data-in="dupe" autocomplete="off">${alt('phone')}</label>
+      <label class="field"><span>City / area</span><input class="${cls('location')}" name="location" value="${c.location}">${alt('location')}</label>
+      <label class="field"><span>LinkedIn</span><input class="${cls('linkedin')}" name="linkedin" value="${c.linkedin}" placeholder="linkedin.com/in/…">${alt('linkedin')}</label>
     </div>
-    <div id="dupe-box" style="margin-top:12px">${dupeBox(c, m.id)}</div>
+    <div id="dupe-box" style="margin-top:12px">${dupeBox(c, m)}</div>
     <div class="field" style="margin-top:14px"><span>Can help with</span>${chipBoxes('roles', uniq(s.roles.map(function (r) { return r.name; }).concat(c.roles)), c.roles)}</div>
     <div class="field" style="margin-top:14px"><span>Academies</span>${chipBoxes('academies', uniq(s.academies.map(function (a) { return a.name; }).concat(c.academies)), c.academies)}</div>
     <div class="grid2" style="margin-top:14px">
-      <label class="field"><span>Relationship to Piper</span><select class="input" name="relationship">${optionList(s.relationships, c.relationship, '—')}</select></label>
-      <label class="field"><span>Availability</span><select class="input" name="availability">${optionList(s.availability, c.availability, '—')}</select></label>
-      <label class="field"><span>Last positive contact</span><input class="input" type="date" name="lastContact" value="${c.lastContact}"><small>Fills in automatically when you log participation.</small></label>
-      <label class="field"><span>Raptor cleared on</span><input class="input" type="date" name="raptor" value="${c.raptor}"><small>Leave blank if not checked in through Raptor.</small></label>
-      <label class="field"><span>Status</span><select class="input" name="status">${optionList(s.statuses, c.status)}</select></label>
+      <label class="field"><span>Relationship to Piper</span><select class="${cls('relationship')}" name="relationship">${optionList(s.relationships, c.relationship, '—')}</select>${alt('relationship')}</label>
+      <label class="field"><span>Availability</span><select class="${cls('availability')}" name="availability">${optionList(s.availability, c.availability, '—')}</select>${alt('availability')}</label>
+      <label class="field"><span>Last positive contact</span><input class="${cls('lastContact')}" type="date" name="lastContact" value="${c.lastContact}"><small>Fills in automatically when you log participation.</small></label>
+      <label class="field"><span>Raptor cleared on</span><input class="${cls('raptor')}" type="date" name="raptor" value="${c.raptor}"><small>Leave blank if not checked in through Raptor.</small></label>
+      <label class="field"><span>Status</span><select class="${cls('status')}" name="status">${optionList(s.statuses, c.status)}</select>${alt('status')}</label>
     </div>
     <div class="field" style="margin-top:14px"><span>Piper staff contact</span>${staffAll.length ? chipBoxes('staff', staffAll, c.staff) : ''}
       <input class="input" name="staffOther" placeholder="Someone else? Type their name (separate several with ;)" style="margin-top:6px"></div>
     <label class="field" style="margin-top:14px"><span>Notes</span><textarea class="input" name="notes" placeholder="Anything future staff should know (great with nervous students, prefers email, only available after 3:30…)">${c.notes}</textarea></label>`,
-    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I('check')} ${m.sub ? 'Add to directory' : 'Save'}</button>`
+    foot: html`${cancelBtn()}<button class="btn primary" type="submit">${I(nMerge || m.switchedTo ? 'merge' : 'check')} ${saveLabel}</button>`
   };
 };
-function dupeBox(c, excludeId) {
+/** Possible duplicates, each with a button that combines it right here in the edit box. */
+function dupeBox(c, m) {
+  m = m || {};
   if (!c.email && !c.phone && !(c.first && c.last)) return '';
-  var ms = findMatches(c, excludeId);
+  var ms = findMatches(c, [m.id].concat(m.mergeIds || []));
   if (!ms.length) return '';
-  return html`<div class="warnbox"><b>Possible duplicate:</b> ${ms.slice(0, 3).map(function (x, i) {
-    return html`${i ? ', ' : ''}<a href="#c/${x.c.id}" data-act="close-modal">${displayName(x.c)}</a> <span class="small">(${x.why})</span>`;
-  })}. Check before saving.</div>`;
+  var label = m.id ? 'Combine into this record' : m.sub ? 'Add to their record instead' : 'Update their record instead';
+  return html`<div class="warnbox dupes"><b>${ms.length === 1 ? 'This might be someone already in the directory' : 'These might be people already in the directory'}</b>
+    ${ms.slice(0, 4).map(function (x) {
+      return html`<div class="dupe-row"><div class="grow"><b>${displayName(x.c)}</b> <span class="tiny muted">${x.c.id}</span>
+        <div class="small">${[x.c.profession, x.c.company, x.c.email, x.c.phone].filter(Boolean).join(' · ')}</div><div class="tiny muted">${x.why}</div></div>
+        <button type="button" class="btn sm" data-act="merge-in" data-id="${x.c.id}">${I('merge')} ${label}</button></div>`;
+    })}</div>`;
 }
 function readContactForm(form) {
   var g = function (n) { var el = form.elements[n]; return el ? String(el.value || '').trim() : ''; };
@@ -1737,6 +1790,49 @@ var ACT = {
     }))));
   },
   'add-contact': function () { openModal({ type: 'contact', draft: {} }); },
+  /* Combine a possible duplicate into the open edit box. Nothing is saved until Save. */
+  'merge-in': function (el) {
+    var m = S.modal, form = $layer.querySelector('form[data-form=contact]'), other = snapContact(el.dataset.id);
+    if (!form || !other) return;
+    var mine = readContactForm(form), absorb = !!m.id;
+    (m.history = m.history || []).push(clone({ values: mine, id: m.id || null, snap: m.snap || null, switchedTo: m.switchedTo || null,
+      mergeIds: m.mergeIds || [], mergeExpect: m.mergeExpect || {}, mergeNames: m.mergeNames || {}, conflicts: m.conflicts || [],
+      alts: m.alts || {}, filled: m.filled || [] }));
+    var out = clone(mine), alts = clone(m.alts || {}), filled = (m.filled || []).slice(), conflicts = (m.conflicts || []).slice();
+    MERGE_FIELDS.forEach(function (f) {
+      var k = f[0], a = String(mine[k] || '').trim(), b = String(other[k] || '').trim();
+      if (!b || sameVal(a, b)) return;
+      if (!a || (k === 'relationship' || k === 'availability') && a === '—') { out[k] = b; filled.push(k); return; }
+      alts[k] = { value: b, label: absorb ? displayName(other) + ' has' : 'Their record has', keep: absorb, from: other.id };
+      if (absorb) conflicts.push({ k: k, value: b, from: other.id });
+    });
+    ['roles', 'academies', 'staff'].forEach(function (k) { out[k] = uniq((mine[k] || []).concat(other[k] || [])); });
+    ['lastContact', 'raptor'].forEach(function (k) { if (String(other[k] || '') > String(out[k] || '')) { out[k] = other[k]; filled.push(k); } });
+    var nm = String(mine.notes || '').trim(), no = String(other.notes || '').trim();
+    if (no && nm.indexOf(no) < 0) out.notes = (absorb ? [nm, no] : [no, nm]).filter(Boolean).join('\n');
+    if (absorb) {
+      m.mergeIds = (m.mergeIds || []).concat(other.id);
+      m.mergeExpect = Object.assign({}, m.mergeExpect); m.mergeExpect[other.id] = other.updated;
+      m.mergeNames = Object.assign({}, m.mergeNames); m.mergeNames[other.id] = displayName(other);
+    } else { m.id = other.id; m.snap = other; m.switchedTo = other.id; }
+    m.values = out; m.alts = alts; m.filled = uniq(filled); m.conflicts = conflicts;
+    rerenderModal(false);
+  },
+  'alt-use': function (el) {
+    var m = S.modal, form = $layer.querySelector('form[data-form=contact]'), k = el.dataset.k, a = (m.alts || {})[k];
+    if (!form || !a) return;
+    var mine = readContactForm(form), was = mine[k];
+    mine[k] = a.value;
+    m.alts = Object.assign({}, m.alts);
+    if (was) m.alts[k] = { value: was, label: 'Was', keep: false }; else delete m.alts[k];
+    m.values = mine; rerenderModal(true);
+  },
+  'merge-undo': function () {
+    var m = S.modal, h = m && m.history && m.history.pop();
+    if (!h) return;
+    ['id', 'snap', 'switchedTo', 'mergeIds', 'mergeExpect', 'mergeNames', 'conflicts', 'alts', 'filled'].forEach(function (k) { m[k] = h[k]; });
+    m.values = h.values; rerenderModal(false); toast('Undone. Your edits are back the way they were.');
+  },
   'edit-contact': function (el) { openModal({ type: 'contact', id: el.dataset.id, snap: snapContact(el.dataset.id) }); },
   'conflict-load': function () {
     if (!S.conflict) return; upsert(S.d.contacts, S.conflict); S.conflict = null; reindex(); render();
@@ -1875,7 +1971,7 @@ function onInput(e) {
   if (!key) return;
   if (key === 'dupe') {
     var form = el.form, c = readContactForm(form);
-    put(document.getElementById('dupe-box'), dupeBox(c, S.modal && S.modal.id));
+    put(document.getElementById('dupe-box'), dupeBox(c, S.modal));
     return;
   }
   if (key === 'log-add') {
@@ -1920,25 +2016,46 @@ var FORMS = {
     if (!c.first && !c.last && !c.email && !c.company) return handleErr(new Error('Add at least a name, email, or company.'), form);
     if (c.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) return handleErr(new Error('That email address does not look right.'), form);
     return saving(form, function () {
-      if (m.sub) {
+      if (m.sub && !m.snap) {
         return Backend.call('reviewSubmission', { id: m.sub, decision: 'approve', contact: c }).then(function (r) {
           upsert(S.d.submissions, r.submission); upsert(S.d.contacts, r.contact);
           S.modal = null; afterChange(); toast('Added ' + displayName(r.contact) + ' to the directory');
         });
       }
-      var cur = m.id ? IX.byId.get(m.id) : null, payload = { contact: c };
+      var cur = m.id ? IX.byId.get(m.id) : null, payload = { contact: c }, merging = (m.mergeIds || []).length > 0;
+      if (merging) {
+        // Details from the combined records that weren't chosen go into the notes, so nothing is lost.
+        var leftover = (m.conflicts || []).filter(function (x) { return !sameVal(x.value, c[x.k]); });
+        if (leftover.length) {
+          c.notes = [c.notes, 'Combined with ' + m.mergeIds.map(function (id) { return m.mergeNames[id] + ' (' + id + ')'; }).join(', ') + ' on ' + todayIso() +
+            '. Their other details: ' + leftover.map(function (x) { return fieldLabel(x.k) + ' ' + x.value; }).join('; ')].filter(Boolean).join('\n');
+        }
+      }
       if (m.snap) {
         // Send only what this person changed, plus what it looked like when they opened it,
         // so edits made at the same time in the sheet (or by another admin) are never overwritten.
         var changes = { id: m.snap.id }, original = {}, n = 0;
         Object.keys(c).forEach(function (k) { if (!sameVal(c[k], m.snap[k])) { changes[k] = c[k]; original[k] = m.snap[k] == null ? '' : m.snap[k]; n++; } });
-        if (!n) { S.modal = null; renderLayer(); toast('No changes'); return; }
+        if (!n && !merging && !m.sub) { S.modal = null; renderLayer(); toast('No changes'); return; }
         payload = { contact: changes, original: original };
+        if (merging) { payload.mergeIds = m.mergeIds; payload.mergeExpect = m.mergeExpect; }
+        if (m.sub) payload.submissionId = m.sub;
       } else if (cur) c.id = cur.id;
       return Backend.call('saveContact', payload).then(function (r) {
+        (r.removedIds || []).forEach(function (rid) {
+          S.d.contacts = S.d.contacts.filter(function (x) { return x.id !== rid; });
+          ['engagements', 'partnerships', 'submissions'].forEach(function (tb) {
+            S.d[tb].forEach(function (x) { if (x.contactId === rid) { x.contactId = r.contact.id; if (tb === 'engagements') x.contactName = displayName(r.contact); } });
+          });
+        });
+        if (r.submission) upsert(S.d.submissions, r.submission);
         upsert(S.d.contacts, r.contact);
         S.modal = null; S.drawer = r.contact.id; history.replaceState(null, '', '#c/' + r.contact.id);
-        afterChange(); toast(r.unchanged ? 'No changes' : cur ? 'Saved' : 'Added ' + displayName(r.contact));
+        afterChange();
+        toast((r.removedIds || []).length ? 'Saved. ' + plural(r.removedIds.length + 1, 'record') + ' combined into one.'
+          : m.sub ? 'Added the form answers to ' + displayName(r.contact)
+          : m.switchedTo ? 'Updated ' + displayName(r.contact) + ' (no duplicate added)'
+          : r.unchanged ? 'No changes' : cur ? 'Saved' : 'Added ' + displayName(r.contact));
       });
     });
   },
@@ -2057,6 +2174,12 @@ function reload(silent) {
   return Backend.call('bootstrap').then(function (d) { applyBootstrap(d); if (!silent) toast('Up to date'); },
     function (e) { handleErr(e); })
     .then(function () { S.refreshing = false; if (S.d) { render(); if (!S.modal) renderLayer(); } });
+}
+/** Re-draw the open edit box from its state (used after combining, swapping, or undoing). */
+function rerenderModal(keepScroll) {
+  var mb = $layer.querySelector('.modal-body'), top = mb ? mb.scrollTop : 0;
+  renderLayer();
+  var mb2 = $layer.querySelector('.modal-body'); if (mb2) mb2.scrollTop = keepScroll ? top : 0;
 }
 function snapContact(id) { var c = IX.byId.get(id); if (!c) return null; var o = {}; Object.keys(c).forEach(function (k) { if (k.charAt(0) !== '_') o[k] = clone(c[k]); }); return o; }
 function sameVal(a, b) {
